@@ -12,7 +12,8 @@
   "dependencies": {
     "express": "^4.15.4",
     "fluent-ffmpeg": "^2.1.2",
-    "morgan": "^1.8.2"
+    "morgan": "^1.8.2",
+    "mustache": "^2.3.0"
   },
   "scripts": {
     "start": "node main.js"
