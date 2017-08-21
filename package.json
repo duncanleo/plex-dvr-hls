@@ -1,0 +1,19 @@
+{
+  "name": "plex-dvr-hls",
+  "version": "1.0.0",
+  "description": "DVR emulator",
+  "main": "main.js",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^4.3.0",
+    "eslint-config-airbnb-base": "^11.3.1",
+    "eslint-plugin-import": "^2.7.0"
+  },
+  "dependencies": {
+    "express": "^4.15.4",
+    "morgan": "^1.8.2"
+  },
+  "scripts": {
+    "start": "node main.js"
+  }
+}
