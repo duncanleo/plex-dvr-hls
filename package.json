@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "express": "^4.15.4",
+    "fluent-ffmpeg": "^2.1.2",
     "morgan": "^1.8.2"
   },
   "scripts": {
