@@ -4,7 +4,7 @@ This web server emulates a SiliconDust HDHomeRun by its HTTP API for use with Pl
 ## Running
 1. `yarn install`
 2. `yarn start`
-3. Add the server to the Plex DVR
+3. Add the server to the Plex DVR e.g. http://localhost:5004
 
 ## Features
 - Multiple channels
