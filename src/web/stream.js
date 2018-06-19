@@ -8,8 +8,8 @@ const stream = (req, res) => {
   const channel = channels[channelNum - 1];
 
   let ffmpegStream = ffmpeg(channel.url)
-    .videoCodec('libx264')
-    .audioCodec('aac')
+    .videoCodec('copy')
+    .audioCodec('copy')
     .addOutputOption('-copyinkf')
     .addOutputOption('-metadata service_provider=AMAZING')
     .addOutputOption(`-metadata service_name=${channel.name.replace(/\s/g, '-')}`)
