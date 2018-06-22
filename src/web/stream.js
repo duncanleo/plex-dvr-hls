@@ -7,7 +7,13 @@ const stream = (req, res) => {
   const { transcode } = req.query;
   const channel = channels[channelNum - 1];
 
+  res.writeHead(200, {
+    'Content-Type': 'video/mp2t',
+  });
+
   let ffmpegStream = ffmpeg(channel.url)
+    .addInputOption('-hwaccel auto')
+    .addInputOption('-re')
     .videoCodec('copy')
     .audioCodec('copy')
     .addOutputOption('-copyinkf')
