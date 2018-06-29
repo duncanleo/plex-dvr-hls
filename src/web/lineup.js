@@ -1,4 +1,6 @@
 const channels = require('../../channels.json');
+const config = require('../config');
+const ip = require('ip');
 
 const lineup = (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -8,7 +10,7 @@ const lineup = (req, res) => {
         GuideNumber: (index + 1).toString(),
         GuideName: channel.name,
         Tags: [],
-        URL: `http://192.168.1.10:5004/stream/${index + 1}`,
+        URL: `http://${ip.address(config.networkinterface, 'ipv4')}:5004/stream/${index + 1}`,
       })),
     ),
   );

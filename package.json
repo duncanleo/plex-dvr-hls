@@ -5,13 +5,14 @@
   "main": "main.js",
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^4.3.0",
+    "eslint": "^5.0.1",
     "eslint-config-airbnb-base": "^11.3.1",
     "eslint-plugin-import": "^2.7.0"
   },
   "dependencies": {
     "express": "^4.15.4",
     "fluent-ffmpeg": "^2.1.2",
+    "ip": "^1.1.5",
     "morgan": "^1.8.2",
     "mustache": "^2.3.0"
   },
