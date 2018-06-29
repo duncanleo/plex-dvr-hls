@@ -1,6 +1,7 @@
 /**
  * @typedef Config
  * @property {String} name
+ * @property {String} networkinterface
  */
 
 /**

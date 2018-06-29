@@ -1,4 +1,5 @@
 const config = require('../config');
+const ip = require('ip');
 
 const discover = (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -12,8 +13,8 @@ const discover = (req, res) => {
         FirmwareVersion: '20150826',
         DeviceID: (Math.floor(Math.random() * 90000000) + 10000000).toString(),
         DeviceAuth: 'test1234',
-        BaseURL: 'http://192.168.1.79:5004',
-        LineupURL: 'http://192.168.1.79:5004/lineup.json',
+        BaseURL: `http://${ip.address()}:5004`,
+        LineupURL: `http://${ip.address()}:5004/lineup.json`,
         Manufacturer: 'Silicondust',
       },
     ),

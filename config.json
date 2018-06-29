@@ -1,3 +1,6 @@
 {
-  "name": "Amazing Tuner"
+
+  "name": "Amazing Tuner",
+  "networkinterface": ""
+
 }
