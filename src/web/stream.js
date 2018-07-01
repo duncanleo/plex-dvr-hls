@@ -26,7 +26,7 @@ const stream = (req, res) => {
   if (process.env.VIDEO_ACCEL === 'false' || process.platform === 'win32') {
     ffmpegStream = ffmpegStream
       .videoCodec('libx264')
-      .preset('superfast');
+      .addOutputOption('-preset superfast');
   } else if (process.platform === 'darwin') {
     ffmpegStream = ffmpegStream
       // .addInputOption('-hwaccel videotoolbox')
