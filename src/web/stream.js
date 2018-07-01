@@ -11,11 +11,34 @@ const stream = (req, res) => {
     'Content-Type': 'video/mp2t',
   });
 
-  let ffmpegStream = ffmpeg(channel.url)
-    .addInputOption('-hwaccel auto')
-    .addInputOption('-re')
-    .videoCodec('copy')
-    .audioCodec('copy')
+  let ffmpegStream = ffmpeg(channel.url);
+
+  // Proxy
+  if (channel.proxy) {
+    const { host, username, password } = channel.proxy;
+    ffmpegStream = ffmpegStream
+      .addInputOption(`-http_proxy http://${username}:${password}@${host}`);
+  }
+
+  // Video acceleration
+  if (process.platform === 'darwin') {
+    ffmpegStream = ffmpegStream
+      // .addInputOption('-hwaccel videotoolbox')
+      .videoCodec('h264_videotoolbox')
+      .addOutputOption('-b:v 10M');
+  } else if (process.platform === 'linux') {
+    ffmpegStream = ffmpegStream
+      .addInputOption('-hwaccel vaapi')
+      .videoCodec('h264_vaapi');
+  } else {
+    ffmpegStream = ffmpegStream
+      .videoCodec('libx264')
+      .preset('superfast');
+  }
+
+  ffmpegStream = ffmpegStream
+    .audioCodec('aac')
+    .addOutputOption('-b:a 256k')
     .addOutputOption('-copyinkf')
     .addOutputOption('-metadata service_provider=AMAZING')
     .addOutputOption(`-metadata service_name=${channel.name.replace(/\s/g, '-')}`)
