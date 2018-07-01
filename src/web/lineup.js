@@ -8,7 +8,7 @@ const lineup = (req, res) => {
         GuideNumber: (index + 1).toString(),
         GuideName: channel.name,
         Tags: [],
-        URL: `http://192.168.1.10:5004/stream/${index + 1}`,
+        URL: `http://${req.headers.host}/stream/${index + 1}`,
       })),
     ),
   );

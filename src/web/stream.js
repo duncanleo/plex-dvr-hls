@@ -7,6 +7,8 @@ const stream = (req, res) => {
   const { transcode } = req.query;
   const channel = channels[channelNum - 1];
 
+  console.log(`[STREAM] Starting '${channel.name}'`);
+
   res.writeHead(200, {
     'Content-Type': 'video/mp2t',
   });
