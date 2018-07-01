@@ -36,7 +36,7 @@ const stream = (req, res) => {
     ffmpegStream = ffmpegStream
       .addInputOption('-vaapi_device /dev/dri/renderD128')
       .addInputOption('-hwaccel vaapi')
-      .addOutputOption('-vf \'format=nv12,hwupload\'')
+      .addOutputOption('-vf format=nv12,hwupload')
       .videoCodec('h264_vaapi');
   }
 
