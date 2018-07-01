@@ -30,7 +30,9 @@ const stream = (req, res) => {
       .addOutputOption('-b:v 10M');
   } else if (process.platform === 'linux') {
     ffmpegStream = ffmpegStream
+      .addInputOption('-vaapi_device /dev/dri/renderD128')
       .addInputOption('-hwaccel vaapi')
+      .addOption('-vf \'format=nv12,hwupload\'')
       .videoCodec('h264_vaapi');
   } else {
     ffmpegStream = ffmpegStream
