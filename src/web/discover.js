@@ -1,5 +1,7 @@
 const config = require('../config');
 
+const channels = require('../../channels.json');
+
 const discover = (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(
@@ -8,7 +10,7 @@ const discover = (req, res) => {
         FriendlyName: config.name,
         ModelNumber: 'HDTC-2US',
         FirmwareName: 'hdhomeruntc_atsc',
-        TunerCount: 1,
+        TunerCount: channels.length * 3,
         FirmwareVersion: '20150826',
         DeviceID: (Math.floor(Math.random() * 90000000) + 10000000).toString(),
         DeviceAuth: 'test1234',
