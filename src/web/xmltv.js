@@ -1,5 +1,6 @@
 const Mustache = require('mustache');
 const fs = require('fs');
+const dateFormat = require('dateformat');
 
 const channels = require('../../channels.json');
 
@@ -11,6 +12,7 @@ const xmltv = (req, res) => {
         channels: channels.map((c, index) => ({
           id: index + 1,
           name: c.name,
+          today: dateFormat(new Date(), 'yyyymmdd'),
         })),
       },
     ),

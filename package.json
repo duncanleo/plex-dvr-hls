@@ -10,6 +10,7 @@
     "eslint-plugin-import": "^2.7.0"
   },
   "dependencies": {
+    "dateformat": "^3.0.3",
     "express": "^4.15.4",
     "fluent-ffmpeg": "^2.1.2",
     "morgan": "^1.8.2",
