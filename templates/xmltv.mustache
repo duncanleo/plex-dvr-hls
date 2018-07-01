@@ -6,9 +6,13 @@
   <channel id="{{ id }}">
     <display-name>{{ name }}</display-name>
   </channel>
-  <programme id="{{ id }}" start="{{ today}}000000" stop="{{ today }}235959" channel="{{ id }}">
-    <title lang="en">{{ name }} Live</title>
-    <desc lang="en">24/7</desc>
-  </programme>
+  {{/channels}}
+  {{#channels}}
+    {{#programmes}}
+    <programme id="{{ id }}" start="{{ dateTimeStart }}" stop="{{ dateTimeEnd }}" channel="{{ id }}">
+      <title lang="en">{{ name }}@{{ hourStr }}</title>
+      <desc lang="en">24/7</desc>
+    </programme>
+    {{/programmes}}
   {{/channels}}
 </tv>
