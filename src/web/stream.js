@@ -23,7 +23,11 @@ const stream = (req, res) => {
   }
 
   // Video acceleration
-  if (process.platform === 'darwin') {
+  if (process.env.VIDEO_ACCEL === 'false' || process.platform === 'win32') {
+    ffmpegStream = ffmpegStream
+      .videoCodec('libx264')
+      .preset('superfast');
+  } else if (process.platform === 'darwin') {
     ffmpegStream = ffmpegStream
       // .addInputOption('-hwaccel videotoolbox')
       .videoCodec('h264_videotoolbox')
@@ -32,12 +36,8 @@ const stream = (req, res) => {
     ffmpegStream = ffmpegStream
       .addInputOption('-vaapi_device /dev/dri/renderD128')
       .addInputOption('-hwaccel vaapi')
-      .addOption('-vf \'format=nv12,hwupload\'')
+      .addOutputOption('-vf \'format=nv12,hwupload\'')
       .videoCodec('h264_vaapi');
-  } else {
-    ffmpegStream = ffmpegStream
-      .videoCodec('libx264')
-      .preset('superfast');
   }
 
   ffmpegStream = ffmpegStream
