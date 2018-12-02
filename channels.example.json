@@ -1,18 +1,15 @@
 [
   {
-    "name": "MBC",
-    "url": "http://125.176.223.25:9981/stream/channelid/1569904271"
+    "name": "Al Jazeera English",
+    "url": "http://aljazeera-eng-hd-live.hls.adaptive.level3.net/aljazeera/english2/index.m3u8"
   },
   {
-    "name": "KBS 1",
-    "url": "http://125.176.223.25:9981/stream/channelid/11138296"
-  },
-  {
-    "name": "CNA",
-    "url": "https://d2ko4czujk9652.cloudfront.net/hls/cnaspcweb/prog_index.m3u8"
-  },
-  {
-    "name": "Channel 8",
-    "url": "https://d34e90s3s13i7n.cloudfront.net/hls/ch8pcweb/prog_index.m3u8"
+    "name": "PGA Tour on CBS",
+    "url": "http://cbssportsliveios-i.akamaihd.net/hls/live/207523/pgatour_simulcast/desktop.m3u8",
+    "proxy": {
+      "host": "proxy.somewhere.com:3128",
+      "username": "",
+      "password": ""
+    }
   }
 ]
