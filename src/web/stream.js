@@ -1,4 +1,5 @@
 const ffmpeg = require('fluent-ffmpeg');
+const path= require('path');
 
 const channels = require('../../channels.json');
 
@@ -23,7 +24,7 @@ const stream = (req, res) => {
   }
 
   // Video acceleration
-  if (process.env.VIDEO_ACCEL === 'false' || process.platform === 'win32') {
+  if (process.env.VIDEO_ACCEL !== 'true' || process.platform === 'win32') {
     ffmpegStream = ffmpegStream
       .videoCodec('libx264')
       .addOutputOption('-preset superfast');
