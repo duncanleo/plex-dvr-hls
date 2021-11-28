@@ -39,6 +39,23 @@ func Stream(c *gin.Context) {
 		)
 	}
 
+	switch config.Cfg.GetEncoderProfile() {
+	case config.EncoderProfileVAAPI:
+		ffmpegArgs = append(
+			ffmpegArgs,
+			"-vaapi_device",
+			"/dev/dri/renderD128",
+			"-hwaccel",
+			"vaapi",
+		)
+	case config.EncoderProfileVideoToolbox:
+		ffmpegArgs = append(
+			ffmpegArgs,
+			"-hwaccel",
+			"videotoolbox",
+		)
+	}
+
 	ffmpegArgs = append(
 		ffmpegArgs,
 		"-i",
@@ -56,10 +73,6 @@ func Stream(c *gin.Context) {
 	case config.EncoderProfileVAAPI:
 		ffmpegArgs = append(
 			ffmpegArgs,
-			"-vaapi_device",
-			"/dev/dri/renderD128",
-			"-hwaccel",
-			"vaapi",
 			"-c:v",
 			"h264_vaapi",
 		)
