@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  app:
+    build:
+      dockerfile: './Dockerfile'
+      context: '.'
+    volumes:
+      - './config.json:/app/config.json'
+    ports:
+      - '5004:5004'

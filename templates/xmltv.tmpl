@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE tv SYSTEM "xmltv.dtd">
+
+<tv source-info-url="http://www.schedulesdirect.org/" source-info-name="Schedules Direct" generator-info-name="XMLTV/$Id: tv_grab_na_dd.in,v 1.70 2008/03/03 15:21:41 rmeden Exp $" generator-info-url="http://www.xmltv.org/">
+  {{range .channels}}
+  <channel id="{{ .ID }}">
+    <display-name>{{ .Name }}</display-name>
+  </channel>
+  {{end}}
+  {{range .channels}}
+    {{ $channel := . }}
+    {{range $.programmes}}
+    <programme id="{{ $channel.ID }}" start="{{ .DateTimeStart }}" stop="{{ .DateTimeEnd }}" channel="{{ $channel.ID }}">
+      <title lang="en">{{ $channel.Name }}@{{ .HourStr }}</title>
+      <desc lang="en">24/7</desc>
+    </programme>
+    {{end}}
+  {{end}}
+</tv>

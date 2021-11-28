@@ -1,18 +1,12 @@
-FROM node:10-alpine AS deps
+FROM golang:1.17.3-bullseye
 
 WORKDIR /app
-COPY package.json .
-COPY yarn.lock .
+COPY go.mod .
+COPY go.sum .
 
-RUN apk --update add --virtual build_deps \
-    build-base libc-dev linux-headers python
-RUN yarn
+RUN go mod download
 
-FROM node:10-alpine
-WORKDIR /app
-RUN apk --update add ffmpeg
-RUN apk add libva-intel-driver libva-utils --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted
 COPY . .
-COPY --from=deps /app/node_modules ./node_modules
-RUN yarn
-CMD [ "yarn", "start" ]
+
+CMD ["go", "run", "cmd/main.go"]
+
