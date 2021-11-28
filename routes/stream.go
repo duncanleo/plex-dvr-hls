@@ -47,6 +47,8 @@ func Stream(c *gin.Context) {
 			"/dev/dri/renderD128",
 			"-hwaccel",
 			"vaapi",
+			"-hwaccel_output_format",
+			"vaapi",
 		)
 	case config.EncoderProfileVideoToolbox:
 		ffmpegArgs = append(
@@ -75,6 +77,8 @@ func Stream(c *gin.Context) {
 			ffmpegArgs,
 			"-c:v",
 			"h264_vaapi",
+			"-vf",
+			"format=nv12|vaapi,hwupload",
 		)
 		break
 	case config.EncoderProfileOMX:
