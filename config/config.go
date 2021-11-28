@@ -6,8 +6,35 @@ import (
 	"os"
 )
 
+type EncoderProfile string
+
+const (
+	EncoderProfileCPU          EncoderProfile = "cpu"
+	EncoderProfileVAAPI        EncoderProfile = "vaapi"
+	EncoderProfileVideoToolbox EncoderProfile = "video_toolbox"
+	EncoderProfileOMX          EncoderProfile = "omx"
+)
+
 type Config struct {
-	Name string `json:"name"`
+	Name           string          `json:"name"`
+	EncoderProfile *EncoderProfile `json:"encoder_profile"`
+}
+
+func (c Config) GetEncoderProfile() EncoderProfile {
+	if c.EncoderProfile == nil {
+		return EncoderProfileCPU
+	}
+
+	switch *c.EncoderProfile {
+	case EncoderProfileVAAPI:
+		return EncoderProfileVAAPI
+	case EncoderProfileOMX:
+		return EncoderProfileOMX
+	case EncoderProfileVideoToolbox:
+		return EncoderProfileVideoToolbox
+	}
+
+	return EncoderProfileCPU
 }
 
 var (

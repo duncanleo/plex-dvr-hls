@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -46,15 +45,15 @@ func Stream(c *gin.Context) {
 		channel.URL,
 	)
 
-	switch runtime.GOOS {
-	case "darwin":
+	switch config.Cfg.GetEncoderProfile() {
+	case config.EncoderProfileVideoToolbox:
 		ffmpegArgs = append(
 			ffmpegArgs,
 			"-c:v",
 			"h264_videotoolbox",
 		)
 		break
-	case "linux":
+	case config.EncoderProfileVAAPI:
 		ffmpegArgs = append(
 			ffmpegArgs,
 			"-vaapi_device",
@@ -63,6 +62,13 @@ func Stream(c *gin.Context) {
 			"vaapi",
 			"-c:v",
 			"h264_vaapi",
+		)
+		break
+	case config.EncoderProfileOMX:
+		ffmpegArgs = append(
+			ffmpegArgs,
+			"-c:v",
+			"h264_omx",
 		)
 		break
 	default:

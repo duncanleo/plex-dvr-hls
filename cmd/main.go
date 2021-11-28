@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/duncanleo/plex-dvr-hls/config"
 	"github.com/duncanleo/plex-dvr-hls/routes"
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +32,8 @@ func main() {
 	r.GET("/lineup_status.json", routes.LineupStatus)
 	r.GET("/stream/:channelID", routes.Stream)
 	r.GET("/xmltv", routes.XMLTV)
+
+	log.Printf("Starting '%s' tuner with encoder profile %s\n", config.Cfg.Name, config.Cfg.GetEncoderProfile())
 
 	r.Run(fmt.Sprintf(":%d", port))
 }
