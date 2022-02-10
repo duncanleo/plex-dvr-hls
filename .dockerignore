@@ -1,2 +1,6 @@
 **/.git
 .env
+.github
+README.md
+LICENSE
+*.example.json
