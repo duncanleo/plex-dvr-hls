@@ -7,5 +7,6 @@ services:
       context: '.'
     volumes:
       - './config.json:/app/config.json'
+      - './channels.json:/app/channels.json'
     ports:
       - '5004:5004'
