@@ -64,39 +64,47 @@ func Stream(c *gin.Context) {
 		channel.URL,
 	)
 
-	switch config.Cfg.GetEncoderProfile() {
-	case config.EncoderProfileVideoToolbox:
+	if channel.DisableTranscode {
 		ffmpegArgs = append(
 			ffmpegArgs,
 			"-c:v",
-			"h264_videotoolbox",
+			"copy",
 		)
-		break
-	case config.EncoderProfileVAAPI:
-		ffmpegArgs = append(
-			ffmpegArgs,
-			"-c:v",
-			"h264_vaapi",
-			"-vf",
-			"format=nv12|vaapi,hwupload",
-		)
-		break
-	case config.EncoderProfileOMX:
-		ffmpegArgs = append(
-			ffmpegArgs,
-			"-c:v",
-			"h264_omx",
-		)
-		break
-	default:
-		ffmpegArgs = append(
-			ffmpegArgs,
-			"-c:v",
-			"libx264",
-			"-preset",
-			"superfast",
-		)
-		break
+	} else {
+		switch config.Cfg.GetEncoderProfile() {
+		case config.EncoderProfileVideoToolbox:
+			ffmpegArgs = append(
+				ffmpegArgs,
+				"-c:v",
+				"h264_videotoolbox",
+			)
+			break
+		case config.EncoderProfileVAAPI:
+			ffmpegArgs = append(
+				ffmpegArgs,
+				"-c:v",
+				"h264_vaapi",
+				"-vf",
+				"format=nv12|vaapi,hwupload",
+			)
+			break
+		case config.EncoderProfileOMX:
+			ffmpegArgs = append(
+				ffmpegArgs,
+				"-c:v",
+				"h264_omx",
+			)
+			break
+		default:
+			ffmpegArgs = append(
+				ffmpegArgs,
+				"-c:v",
+				"libx264",
+				"-preset",
+				"superfast",
+			)
+			break
+		}
 	}
 
 	ffmpegArgs = append(

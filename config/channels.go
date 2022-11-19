@@ -13,9 +13,10 @@ type ProxyConfig struct {
 }
 
 type Channel struct {
-	Name        string       `json:"name"`
-	URL         string       `json:"url"`
-	ProxyConfig *ProxyConfig `json:"proxy"`
+	Name             string       `json:"name"`
+	URL              string       `json:"url"`
+	ProxyConfig      *ProxyConfig `json:"proxy"`
+	DisableTranscode bool         `json:"disableTranscode"`
 }
 
 var (
