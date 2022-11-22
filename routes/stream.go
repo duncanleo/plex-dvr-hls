@@ -85,7 +85,7 @@ func Stream(c *gin.Context) {
 				"-c:v",
 				"h264_vaapi",
 				"-vf",
-				"format=nv12|vaapi,hwupload",
+				"scale_vaapi=format=nv12,hwupload",
 			)
 			break
 		case config.EncoderProfileOMX:
