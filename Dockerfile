@@ -1,11 +1,5 @@
 FROM denismakogon/ffmpeg-alpine:4.0-buildstage as build-stage
-FROM golang:1.17.6-alpine
-
-# Copy ffmpeg runtime https://github.com/denismakogon/ffmpeg-alpine#custom-runtime
-COPY --from=build-stage /tmp/fakeroot/bin /usr/local/bin
-COPY --from=build-stage /tmp/fakeroot/share /usr/local/share
-COPY --from=build-stage /tmp/fakeroot/include /usr/local/include
-COPY --from=build-stage /tmp/fakeroot/lib /usr/local/lib
+FROM golang:1.17.6-alpine as app-build
 
 WORKDIR /app
 COPY go.mod .
@@ -15,5 +9,18 @@ RUN go mod download
 
 COPY . .
 
-CMD ["go", "run", "cmd/main.go"]
+RUN go build -o /bin/app cmd/*.go
+
+FROM alpine:3.15.0 as app
+
+# Copy ffmpeg runtime https://github.com/denismakogon/ffmpeg-alpine#custom-runtime
+COPY --from=build-stage /tmp/fakeroot/bin /usr/local/bin
+COPY --from=build-stage /tmp/fakeroot/share /usr/local/share
+COPY --from=build-stage /tmp/fakeroot/include /usr/local/include
+COPY --from=build-stage /tmp/fakeroot/lib /usr/local/lib
+
+COPY --from=app-build /bin/app /bin/app
+WORKDIR /app
+
+ENTRYPOINT ["/bin/app"]
 
