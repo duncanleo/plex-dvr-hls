@@ -1,5 +1,5 @@
 FROM denismakogon/ffmpeg-alpine:4.0-buildstage as build-stage
-FROM golang:1.17.6-alpine as app-build
+FROM golang:1.21-alpine as app-build
 
 WORKDIR /app
 COPY go.mod .
