@@ -1,0 +1,31 @@
+name: Test Build
+
+on:
+  pull_request:
+    types: [synchronize]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+      - name: Set up Golang
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+        id: go
+      - name: Get dependencies
+        run: |
+          go mod download
+      - name: Build
+        run: |
+          GOOS=linux GOARCH=amd64 go build -v -o ${GITHUB_REPOSITORY##*/}-linux-x64 ./cmd/...
+          GOOS=linux GOARCH=arm GOARM=5 go build -v -o ${GITHUB_REPOSITORY##*/}-linux-armv5 ./cmd/...
+          GOOS=linux GOARCH=arm64 go build -v -o ${GITHUB_REPOSITORY##*/}-linux-arm64 ./cmd/...
+          GOOS=darwin GOARCH=amd64 go build -v -o ${GITHUB_REPOSITORY##*/}-darwin-amd64 ./cmd/...
+          GOOS=darwin GOARCH=arm64 go build -v -o ${GITHUB_REPOSITORY##*/}-darwin-arm64 ./cmd/...
+          GOOS=windows GOARCH=amd64 go build -v -o ${GITHUB_REPOSITORY##*/}-windows-amd64.exe ./cmd/...
+          GOOS=windows GOARCH=386 go build -v -o ${GITHUB_REPOSITORY##*/}-windows-i386.exe ./cmd/...
+          GOOS=windows GOARCH=arm go build -v -o ${GITHUB_REPOSITORY##*/}-windows-arm.exe ./cmd/...
+          GOOS=windows GOARCH=arm64 go build -v -o ${GITHUB_REPOSITORY##*/}-windows-arm64.exe ./cmd/...
