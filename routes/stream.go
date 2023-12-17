@@ -39,6 +39,14 @@ func Stream(c *gin.Context) {
 		)
 	}
 
+	if channel.UserAgent != nil {
+		ffmpegArgs = append(
+			ffmpegArgs,
+			"-headers",
+			fmt.Sprintf("User-Agent: %s", *channel.UserAgent),
+		)
+	}
+
 	switch config.Cfg.GetEncoderProfile() {
 	case config.EncoderProfileVAAPI:
 		ffmpegArgs = append(

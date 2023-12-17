@@ -17,6 +17,9 @@ type Channel struct {
 	URL              string       `json:"url"`
 	ProxyConfig      *ProxyConfig `json:"proxy"`
 	DisableTranscode bool         `json:"disableTranscode"`
+
+	// UserAgent is a custom UA string that will be used by FFMPEG to make requests to the stream URL.
+	UserAgent *string `json:"userAgent,omitempty"`
 }
 
 var (
