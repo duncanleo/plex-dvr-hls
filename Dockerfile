@@ -22,5 +22,7 @@ COPY --from=build-stage /tmp/fakeroot/lib /usr/local/lib
 COPY --from=app-build /bin/app /bin/app
 WORKDIR /app
 
+COPY templates/ ./templates/
+
 ENTRYPOINT ["/bin/app"]
 
