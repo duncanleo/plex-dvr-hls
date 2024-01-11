@@ -29,7 +29,7 @@ jobs:
 
       - name: Extract repository name
         shell: bash
-        run: echo "##[set-output name=repo;]$(echo ${GITHUB_REPOSITORY##*/})"
+        run: echo "repo=${GITHUB_REPOSITORY##*/}" >> $GITHUB_OUTPUT
         id: extract_repo
 
       - name: Get dependencies
