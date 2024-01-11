@@ -22,11 +22,6 @@ jobs:
         with:
           node-version: 20.x
 
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
-
       - name: Extract repository name
         shell: bash
         run: echo "repo=${GITHUB_REPOSITORY##*/}" >> $GITHUB_OUTPUT
