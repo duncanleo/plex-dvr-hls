@@ -1,4 +1,5 @@
 {
   "name": "Amazing Tuner",
-  "encoder_profile": "cpu"
+  "encoder_profile": "cpu",
+  "tuner_count": 3
 }

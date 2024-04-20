@@ -18,6 +18,7 @@ const (
 type Config struct {
 	Name           string          `json:"name"`
 	EncoderProfile *EncoderProfile `json:"encoder_profile"`
+	TunerCount     *int            `json:"tuner_count"`
 }
 
 func (c Config) GetEncoderProfile() EncoderProfile {

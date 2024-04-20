@@ -32,13 +32,19 @@ func Discover(c *gin.Context) {
 
 	var host = c.Request.Host
 
+	// Defaults to channel count * 3
+	var tunerCount = len(config.Channels) * 3
+	if config.Cfg.TunerCount != nil {
+		tunerCount = *config.Cfg.TunerCount
+	}
+
 	c.JSON(
 		http.StatusOK,
 		DVR{
 			FriendlyName:    config.Cfg.Name,
 			ModelNumber:     "HDTC-2US",
 			FirmwareName:    "hdhomeruntc_atsc",
-			TunerCount:      len(config.Channels) * 3,
+			TunerCount:      tunerCount,
 			FirmwareVersion: "20150826",
 			DeviceID:        fmt.Sprintf("%d", deviceID),
 			DeviceAuth:      "test1234",
