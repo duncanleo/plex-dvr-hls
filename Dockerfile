@@ -12,7 +12,12 @@ RUN go build -o /bin/app cmd/*.go
 
 FROM alpine:3.19
 
-RUN apk add ffmpeg intel-media-driver
+ARG TARGETPLATFORM
+
+RUN case ${TARGETPLATFORM:-linux/amd64} in \
+        "linux/amd64") apk add ffmpeg intel-media-driver ;; \
+        *)             apk add ffmpeg ;; \
+    esac
 
 COPY --from=app-build /bin/app /bin/app
 WORKDIR /app
