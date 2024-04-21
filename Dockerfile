@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine as app-build
+FROM golang:1.21-alpine3.19 as app-build
 
 WORKDIR /app
 COPY go.mod .
@@ -10,9 +10,9 @@ COPY . .
 
 RUN go build -o /bin/app cmd/*.go
 
-FROM collelog/ffmpeg:4.4-alpine-vaapi-amd64
+FROM alpine:3.19
 
-RUN apk add ffmpeg
+RUN apk add ffmpeg intel-media-driver
 
 COPY --from=app-build /bin/app /bin/app
 WORKDIR /app
