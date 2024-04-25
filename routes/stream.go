@@ -175,12 +175,22 @@ func Stream(c *gin.Context) {
 		return
 	}
 
+	// Detect errors on the FFMPEG side. Terminate the stream if any.
+	go func() {
+		err = ffmpegProcess.Wait()
+		if err != nil {
+			log.Println(err)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}()
+
 	c.Stream(func(w io.Writer) bool {
 		_, err := io.Copy(w, outPipe)
 
 		if err != nil {
 			log.Println(err)
-			return true
+			return false
 		}
 
 		if ffmpegProcess.Process != nil {
@@ -189,4 +199,8 @@ func Stream(c *gin.Context) {
 		return true
 	})
 
+	// Ensure that the FFMPEG process is ended once it is not needed.
+	if ffmpegProcess.Process != nil {
+		ffmpegProcess.Process.Kill()
+	}
 }
