@@ -63,7 +63,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and Push
+      - name: Build without Pushing
         id: docker_build
         uses: docker/build-push-action@v5
         with:
