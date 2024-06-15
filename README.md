@@ -7,18 +7,35 @@ This web server emulates a SiliconDust HDHomeRun by its HTTP API for use with Pl
 
 ### Running
 ##### Docker
-A Docker container is available for use. Do take note of the need for `config.json` and `channels.json`.
+A prebuilt [Docker image](https://github.com/duncanleo/plex-dvr-hls/pkgs/container/plex-dvr-hls) is available for use. 
+
+###### Supported Architectures
+- `linux/amd64`
+- `linux/arm64`
+- `linux/arm/v7`
+
+###### Docker Compose
+Please refer to the [sample Docker Compose file](./docker-compose.yml) for a more seamless setup.
+
+Please note that the following files need to be present in the same directory (see examples in the repository).
+- `config.json`
+- `channels.json`
 
 ```yaml
 services:
-    plex-dvr-hls:
-        image: ghcr.io/duncanleo/plex-dvr-hls:latest
-        volumes:
-            - './config.json:/app/config.json:ro'
-            - './channels.json:/app/channels.json:ro'
-            - './templates:/app/templates:ro'
-        ports:
-            - '5004:5004'
+  plex-dvr-hls:
+    image: ghcr.io/duncanleo/plex-dvr-hls:latest
+    volumes:
+      - type: bind
+        source: './config.json'
+        target: '/app/config.json'
+        read_only: true
+      - type: bind
+        source: './channels.json'
+        target: '/app/channels.json'
+        read_only: true
+    ports:
+      - '5004:5004'
 ```
 
 ##### Binary
