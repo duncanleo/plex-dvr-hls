@@ -2,9 +2,7 @@ version: '3.7'
 
 services:
   app:
-    build:
-      dockerfile: './Dockerfile'
-      context: '.'
+    image: ghcr.io/duncanleo/plex-dvr-hls:latest
     volumes:
       - type: bind
         source: './config.json'
@@ -13,10 +11,6 @@ services:
       - type: bind
         source: './channels.json'
         target: '/app/channels.json'
-        read_only: true
-      - type: bind
-        source: './templates'
-        target: '/app/templates'
         read_only: true
     ports:
       - '5004:5004'
