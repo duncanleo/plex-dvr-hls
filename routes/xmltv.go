@@ -12,8 +12,9 @@ import (
 )
 
 type ChannelSimplified struct {
-	ID   int
-	Name string
+    ID   int
+    Name string
+    Icon *string
 }
 
 type Programme struct {
@@ -26,11 +27,16 @@ func XMLTV(c *gin.Context) {
 	var channels []ChannelSimplified
 
 	for index, channel := range config.Channels {
+		var icon *string
+        if channel.Icon != nil {
+            icon = channel.Icon
+        }
 		channels = append(
 			channels,
 			ChannelSimplified{
 				ID:   index + 1,
 				Name: channel.Name,
+				Icon: icon,
 			},
 		)
 	}
