@@ -71,7 +71,7 @@ func WatchChannelsFile() {
             if !ok {
                 return
             }
-            if event.Op&fsnotify.Write == fsnotify.Write {
+            if event.Has(fsnotify.Write) {
                 log.Println("Detected change in channels.json, reloading channels")
                 err := LoadChannels()
                 if err != nil {
