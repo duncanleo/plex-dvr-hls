@@ -33,7 +33,7 @@ func XMLTV(c *gin.Context) {
 				ID:   index + 1,
 				Name: channel.Name,
 				Icon: channel.Icon,
-			}
+			},
 		)
 	}
 
