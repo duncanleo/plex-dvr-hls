@@ -29,5 +29,3 @@ config.json
 routes/.DS_Store
 .DS_Store
 .gitignore
-go.sum
-go.mod
