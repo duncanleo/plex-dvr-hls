@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine3.19 as app-build
+FROM golang:1.21-alpine3.19 AS app-build
 
 WORKDIR /app
 COPY go.mod .
@@ -15,8 +15,8 @@ FROM alpine:3.19
 ARG TARGETPLATFORM
 
 RUN case ${TARGETPLATFORM:-linux/amd64} in \
-        "linux/amd64") apk add ffmpeg intel-media-driver ;; \
-        *)             apk add ffmpeg ;; \
+    "linux/amd64") apk add ffmpeg intel-media-driver ;; \
+    *)             apk add ffmpeg ;; \
     esac
 
 COPY --from=app-build /bin/app /bin/app
