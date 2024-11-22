@@ -7,14 +7,15 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/duncanleo/plex-dvr-hls/config"
+	"plex-dvr-hls/config"
+
 	"github.com/gin-gonic/gin"
 )
 
 type ChannelSimplified struct {
-    ID   int
-    Name string
-    Icon *string
+	ID   int
+	Name string
+	Icon *string
 }
 
 type Programme struct {
