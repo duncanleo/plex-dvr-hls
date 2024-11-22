@@ -77,6 +77,11 @@ func WatchChannelsFile() {
                 if err != nil {
                     log.Printf("Error reloading channels: %s\n", err)
                 }
+
+                err = RefreshPlexLiveTVGuide()
+                if err != nil {
+                    log.Printf("Error refreshing Plex LiveTV Guide: %s\n", err)
+                }
             }
         case err, ok := <-watcher.Errors:
             if !ok {
