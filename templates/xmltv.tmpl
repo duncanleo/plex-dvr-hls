@@ -5,6 +5,9 @@
   {{range .channels}}
   <channel id="{{ .ID }}">
     <display-name>{{ .Name }}</display-name>
+    {{- if .Icon }}
+        <icon src="{{ .Icon }}" />
+    {{- end }}
   </channel>
   {{end}}
   {{range .channels}}
