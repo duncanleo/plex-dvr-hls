@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"plex-dvr-hls/config"
+
 	"github.com/gin-gonic/gin"
 )
 
 type ChannelSimplified struct {
-    ID   int
-    Name string
-    Icon *string
+	ID   int
+	Name string
+	Icon *string
 }
 
 type Programme struct {
@@ -28,13 +29,13 @@ func XMLTV(c *gin.Context) {
 
 	for index, channel := range config.Channels {
 		channels = append(
-            channels,
-            ChannelSimplified{
-                ID:   index + 1,
-                Name: channel.Name,
-                Icon: channel.Icon,
-            },
-        )
+			channels,
+			ChannelSimplified{
+				ID:   index + 1,
+				Name: channel.Name,
+				Icon: channel.Icon,
+			},
+		)
 	}
 
 	var programmes []Programme
