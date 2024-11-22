@@ -1,11 +1,11 @@
 package config
 
 import (
-    "encoding/json"
-    "fmt"
-    "log"
-    "net/http"
-    "os"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
 )
 
 type EncoderProfile string
@@ -18,15 +18,15 @@ const (
 )
 
 type PlexServer struct {
-    Endpoint string `json:"endpoint"`
-    Token    string `json:"token"`
+	Endpoint string `json:"endpoint"`
+	Token    string `json:"token"`
 }
 
 type Config struct {
-	Name           string          		`json:"name"`
-	EncoderProfile *EncoderProfile 		`json:"encoder_profile"`
-	TunerCount     *int              	`json:"tuner_count"`
-	PlexServers    []PlexServer 	   	`json:"plex_servers"`
+	Name           string          `json:"name"`
+	EncoderProfile *EncoderProfile `json:"encoder_profile"`
+	TunerCount     *int            `json:"tuner_count"`
+	PlexServers    []PlexServer    `json:"plex_servers"`
 }
 
 func (c Config) GetEncoderProfile() EncoderProfile {
@@ -51,28 +51,28 @@ var (
 )
 
 func RefreshPlexLiveTVGuide() error {
-    for _, server := range Cfg.PlexServers {
-        url := server.Endpoint + "/livetv/dvrs/1/guide?X-Plex-Token=" + server.Token
+	for _, server := range Cfg.PlexServers {
+		url := server.Endpoint + "/livetv/dvrs/29/reloadGuide?X-Plex-Token=" + server.Token
 
-        req, err := http.NewRequest("PUT", url, nil)
-        if err != nil {
-            return err
-        }
+		req, err := http.NewRequest("POST", url, nil)
+		if err != nil {
+			return err
+		}
 
-        client := &http.Client{}
-        resp, err := client.Do(req)
-        if err != nil {
-            return err
-        }
-        defer resp.Body.Close()
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
 
-        if resp.StatusCode != http.StatusOK {
-            return fmt.Errorf("failed to refresh Plex LiveTV Guide for server %s, status code: %d", server.Endpoint, resp.StatusCode)
-        }
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("failed to refresh Plex LiveTV Guide for server %s, status code: %d", server.Endpoint, resp.StatusCode)
+		}
 
-        log.Printf("Plex LiveTV Guide refreshed successfully for server %s", server.Endpoint)
-    }
-    return nil
+		log.Printf("Plex LiveTV Guide refreshed successfully for server %s", server.Endpoint)
+	}
+	return nil
 }
 
 func init() {
