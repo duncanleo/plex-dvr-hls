@@ -7,7 +7,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/duncanleo/plex-dvr-hls/config"
+	"plex-dvr-hls/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,13 +28,13 @@ func XMLTV(c *gin.Context) {
 
 	for index, channel := range config.Channels {
 		channels = append(
-			channels,
-			ChannelSimplified{
-				ID:   index + 1,
-				Name: channel.Name,
-				Icon: channel.Icon,
-			},
-		)
+            channels,
+            ChannelSimplified{
+                ID:   index + 1,
+                Name: channel.Name,
+                Icon: channel.Icon,
+            },
+        )
 	}
 
 	var programmes []Programme
