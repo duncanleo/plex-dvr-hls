@@ -1,4 +1,4 @@
-module github.com/duncanleo/plex-dvr-hls
+module plex-dvr-hls
 
 go 1.23.3
 toolchain go1.24.1

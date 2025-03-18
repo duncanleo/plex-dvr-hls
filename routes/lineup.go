@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/duncanleo/plex-dvr-hls/config"
+	"plex-dvr-hls/config"
 	"github.com/gin-gonic/gin"
 )
 

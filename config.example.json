@@ -1,5 +1,15 @@
 {
   "name": "Amazing Tuner",
   "encoder_profile": "cpu",
-  "tuner_count": 3
+  "tuner_count": 3,
+  "plex_servers": [
+        {
+            "endpoint": "http://your-plex-server-1:32400",
+            "token": "your-plex-token-1"
+        },
+        {
+            "endpoint": "http://your-plex-server-2:32400",
+            "token": "your-plex-token-2"
+        }
+    ]
 }
