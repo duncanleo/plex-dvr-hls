@@ -47,6 +47,14 @@ func Stream(c *gin.Context) {
 		)
 	}
 
+	if channel.Referer != nil {
+		ffmpegArgs = append(
+			ffmpegArgs,
+			"-headers",
+			fmt.Sprintf("Referer: %s", *channel.Referer),
+		)
+	}
+
 	switch config.Cfg.GetEncoderProfile() {
 	case config.EncoderProfileVAAPI:
 		ffmpegArgs = append(

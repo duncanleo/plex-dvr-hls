@@ -25,6 +25,7 @@ type Channel struct {
 
 	// UserAgent is a custom UA string that will be used by FFMPEG to make requests to the stream URL.
 	UserAgent        *string `json:"userAgent,omitempty"`
+    Referer          *string `json:"referer,omitempty"`
     Icon             *string      `json:"icon,omitempty"`
 }
 
