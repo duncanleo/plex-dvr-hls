@@ -13,6 +13,7 @@ const (
 	EncoderProfileVAAPI        EncoderProfile = "vaapi"
 	EncoderProfileVideoToolbox EncoderProfile = "video_toolbox"
 	EncoderProfileOMX          EncoderProfile = "omx"
+	EncoderProfileNVENC        EncoderProfile = "nvenc"
 )
 
 type Config struct {
@@ -33,6 +34,8 @@ func (c Config) GetEncoderProfile() EncoderProfile {
 		return EncoderProfileOMX
 	case EncoderProfileVideoToolbox:
 		return EncoderProfileVideoToolbox
+	case EncoderProfileNVENC:
+		return EncoderProfileNVENC
 	}
 
 	return EncoderProfileCPU

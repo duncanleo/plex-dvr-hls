@@ -72,6 +72,14 @@ func Stream(c *gin.Context) {
 			"-hwaccel",
 			"videotoolbox",
 		)
+	case config.EncoderProfileNVENC:
+		ffmpegArgs = append(
+			ffmpegArgs,
+			"-hwaccel",
+			"cuda",
+			"-hwaccel_output_format",
+			"cuda",
+		)
 	}
 
 	ffmpegArgs = append(
@@ -109,6 +117,15 @@ func Stream(c *gin.Context) {
 				ffmpegArgs,
 				"-c:v",
 				"h264_omx",
+			)
+			break
+		case config.EncoderProfileNVENC:
+			ffmpegArgs = append(
+				ffmpegArgs,
+				"-c:v",
+				"h264_nvenc",
+				"-preset",
+				"p3",
 			)
 			break
 		default:
