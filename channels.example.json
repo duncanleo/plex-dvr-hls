@@ -5,6 +5,7 @@
   },
   {
     "name": "PGA Tour on CBS",
+    "id": 12, 
     "url": "http://cbssportsliveios-i.akamaihd.net/hls/live/207523/pgatour_simulcast/desktop.m3u8",
     "proxy": {
       "host": "proxy.somewhere.com:3128",

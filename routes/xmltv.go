@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"text/template"
 	"time"
+	"slices"
 
 	"github.com/duncanleo/plex-dvr-hls/config"
 	"github.com/gin-gonic/gin"
@@ -26,11 +27,26 @@ type Programme struct {
 func XMLTV(c *gin.Context) {
 	var channels []ChannelSimplified
 
+	var channel_numbers []int
+
 	for index, channel := range config.Channels {
+		var channel_number int = index + 1
+		if channel.ID != 0 {
+			channel_number = channel.ID
+		}
+
+		for slices.Contains(channel_numbers, channel_number){
+			channel_number++
+		}
+		channel_numbers = append(
+			channel_numbers,
+			channel_number,
+		)
+
 		channels = append(
 			channels,
 			ChannelSimplified{
-				ID:   index + 1,
+				ID:   channel_number,
 				Name: channel.Name,
 				Icon: channel.Icon,
 			},
