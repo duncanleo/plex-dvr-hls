@@ -41,7 +41,8 @@ services:
 ##### Binary
 1. Download a binary release from GitHub, or clone the repository and compile on your machine (e.g. with `GOOS=linux GOARCH=amd64 go build -o plex-dvr-hls-linux-amd64 cmd/main.go`)
 2. Create a `config.json` in the working directory and fill in the necessary.
-   - Possible values for `encoder_profile` are `vaapi`, `video_toolbox`, `omx` and `cpu`. A sample `config.example.json` is available on GitHub.
+   - Possible values for `encoder_profile` are `vaapi`, `video_toolbox`, `omx`, `nvenc` and `cpu`. A sample `config.example.json` is available on GitHub.
+     - `nvenc` requires an NVIDIA GPU and ffmpeg with NVENC support. For Docker, see [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
 3. Create a `channels.json` and fill in the necessary.
    - A sample `channels.example.json` is available on GitHub.
 4. Copy the `templates` folder from this repository into the working directory (alongside the two JSON files)
