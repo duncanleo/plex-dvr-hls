@@ -2,9 +2,10 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
-	"errors"
+	"strings"
 	"sync"
 
     "github.com/fsnotify/fsnotify"
@@ -111,7 +112,14 @@ func LoadChannels() error {
 }
 
 func init() {
-    var playlist = os.Getenv("PLAYLIST")
+	// Skip initialization during tests by checking command line args
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, "-test.") {
+			return
+		}
+	}
+
+	var playlist = os.Getenv("PLAYLIST")
 	if len(playlist) > 0 {
 	    err := LoadChannelsFromPl(playlist)	
 	    if err == nil {

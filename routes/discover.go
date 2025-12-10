@@ -2,9 +2,7 @@ package routes
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/duncanleo/plex-dvr-hls/config"
 	"github.com/gin-gonic/gin"
@@ -23,13 +21,7 @@ type DVR struct {
 	Manufacturer    string `json:"Manufacturer"`
 }
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 func Discover(c *gin.Context) {
-	var deviceID = rand.Int63n(90000000-10000000) + 10000000
-
 	var host = c.Request.Host
 
 	// Defaults to channel count * 3
@@ -46,7 +38,7 @@ func Discover(c *gin.Context) {
 			FirmwareName:    "hdhomeruntc_atsc",
 			TunerCount:      tunerCount,
 			FirmwareVersion: "20150826",
-			DeviceID:        fmt.Sprintf("%d", deviceID),
+			DeviceID:        *config.Cfg.DeviceID,
 			DeviceAuth:      "test1234",
 			BaseURL:         fmt.Sprintf("http://%s", host),
 			LineupURL:       fmt.Sprintf("http://%s/lineup.json", host),

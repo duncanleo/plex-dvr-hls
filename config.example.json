@@ -1,5 +1,6 @@
 {
   "name": "Amazing Tuner",
   "encoder_profile": "cpu",
-  "tuner_count": 3
+  "tuner_count": 3,
+  "device_id": "30480554"
 }
