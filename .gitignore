@@ -28,3 +28,4 @@ channels.json
 config.json
 routes/.DS_Store
 .DS_Store
+.device_id

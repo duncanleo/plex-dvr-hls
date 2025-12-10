@@ -188,6 +188,54 @@ func TestConfigJSONUnmarshal(t *testing.T) {
 	}
 }
 
+func TestDeviceIDPersistence(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	// Create a config without device_id
+	configContent := `{"name": "Test"}`
+	os.WriteFile("config.json", []byte(configContent), 0644)
+
+	// First load - should generate and save device ID
+	err := LoadConfig()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
+
+	if Cfg.DeviceID == nil {
+		t.Fatal("DeviceID should be generated")
+	}
+	firstID := *Cfg.DeviceID
+
+	// Check that .device_id file was created
+	savedID, err := loadDeviceIDFromFile()
+	if err != nil {
+		t.Fatalf("Device ID file should have been created: %v", err)
+	}
+
+	if savedID != firstID {
+		t.Errorf("Saved device ID %s doesn't match generated ID %s", savedID, firstID)
+	}
+
+	// Reset config and load again - should use saved device ID
+	Cfg = Config{}
+	err = LoadConfig()
+	if err != nil {
+		t.Fatalf("Failed to reload config: %v", err)
+	}
+
+	if Cfg.DeviceID == nil {
+		t.Fatal("DeviceID should be loaded from file")
+	}
+
+	if *Cfg.DeviceID != firstID {
+		t.Errorf("Device ID changed after reload: expected %s, got %s", firstID, *Cfg.DeviceID)
+	}
+}
+
 func stringPtr(s string) *string {
 	return &s
 }
