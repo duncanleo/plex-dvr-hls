@@ -1,10 +1,29 @@
-name: Test Build
+name: Test & Build
 
 on:
   pull_request:
     types: [synchronize, opened]
+  push:
+    branches:
+      - master
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+      - name: Get dependencies
+        run: go mod download
+      - name: Run tests
+        run: go test -v ./...
+      - name: Run tests with race detector
+        run: go test -race -short ./...
+
   build:
     runs-on: ubuntu-latest
     steps:

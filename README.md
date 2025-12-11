@@ -43,6 +43,7 @@ services:
 2. Create a `config.json` in the working directory and fill in the necessary.
    - Possible values for `encoder_profile` are `vaapi`, `video_toolbox`, `omx`, `nvenc` and `cpu`. A sample `config.example.json` is available on GitHub.
      - `nvenc` requires an NVIDIA GPU and ffmpeg with NVENC support. For Docker, see [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+   - **Optional:** Set `device_id` to a specific value (e.g. `"30480554"`) to maintain a stable device ID. If omitted, a random ID will be generated on first run and automatically saved to `.device_id` for persistence across restarts. Priority order: `config.json` > `.device_id` file > auto-generate new.
 3. Create a `channels.json` and fill in the necessary.
    - A sample `channels.example.json` is available on GitHub.
 4. Copy the `templates` folder from this repository into the working directory (alongside the two JSON files)
@@ -53,3 +54,19 @@ services:
 1. Clone the repo
 2. Run `go mod download`
 3. To run the server, run `go run cmd/main.go`
+
+### Testing
+Run the test suite:
+```bash
+go test ./...
+```
+
+Run tests with verbose output:
+```bash
+go test -v ./...
+```
+
+Run tests with race detection:
+```bash
+go test -race ./...
+```
