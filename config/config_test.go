@@ -139,11 +139,11 @@ func TestDeviceIDFormat(t *testing.T) {
 
 func TestConfigJSONUnmarshal(t *testing.T) {
 	tests := []struct {
-		name           string
-		json           string
-		expectedID     *string
-		expectedName   string
-		shouldHaveID   bool
+		name         string
+		json         string
+		expectedID   *string
+		expectedName string
+		shouldHaveID bool
 	}{
 		{
 			name:         "Config with device_id",

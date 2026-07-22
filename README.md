@@ -78,7 +78,8 @@ services:
 ### Development
 1. Clone the repo
 2. Run `go mod download`
-3. To run the server, run `go run cmd/main.go`
+3. Copy `config.example.json` and `channels.example.json` to `config.json` and `channels.json`, then configure them.
+4. To run the server, run `go run cmd/main.go`
 
 ### Testing
 Run the test suite:
@@ -95,3 +96,22 @@ Run tests with race detection:
 ```bash
 go test -race ./...
 ```
+
+### Contributor checks
+
+The repository includes a small, dependency-free engineering harness for
+repeatable agent and human contributions. Before opening a change, run:
+
+```bash
+make check
+```
+
+For changes to concurrent state, file watching, streaming, or shutdown, also
+run:
+
+```bash
+make test-race
+```
+
+See [AGENTS.md](./AGENTS.md) for the concise contributor entry point and
+[docs/README.md](./docs/README.md) for project knowledge and execution plans.
