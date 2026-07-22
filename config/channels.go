@@ -25,6 +25,13 @@ type Channel struct {
 	ProxyConfig           *ProxyConfig `json:"proxy"`
 	DisableTranscode      bool         `json:"disableTranscode"`
 	DisableAudioTranscode bool         `json:"disableAudioTranscode"`
+	// Reconnect enables -reconnect_at_eof and -reconnect_streamed for HTTP(S)
+	// sources. Off by default: the HLS demuxer manages its own segment cycling
+	// and treats a normal playlist-fetch EOF as a reconnect trigger, which
+	// causes an infinite loop on providers that 302-redirect each request to a
+	// fresh backend. Enable only for direct MPEG-TS or other non-HLS HTTP
+	// sources that need low-level reconnect on EOF.
+	Reconnect bool `json:"reconnect"`
 
 	// UserAgent is a custom UA string that will be used by FFMPEG to make requests to the stream URL.
 	UserAgent *string `json:"userAgent,omitempty"`

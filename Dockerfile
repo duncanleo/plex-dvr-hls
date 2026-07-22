@@ -19,6 +19,8 @@ RUN case ${TARGETPLATFORM:-linux/amd64} in \
     *)             apk add ffmpeg ;; \
     esac
 
+WORKDIR /app
+
 COPY --from=app-build /bin/app /bin/app
 
 ENTRYPOINT ["/bin/app"]

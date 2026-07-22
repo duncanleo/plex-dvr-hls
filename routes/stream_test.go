@@ -560,28 +560,49 @@ func findInputIdx(args []string) int {
 	return -1
 }
 
-// TestBuildFFmpegArgsReconnect verifies that reconnect flags are present before
-// -i so ffmpeg automatically recovers from upstream HLS hiccups instead of
-// exiting and dropping the Plex stream permanently.
+// TestBuildFFmpegArgsReconnect verifies that -reconnect is present before -i
+// for HTTP(S) sources so ffmpeg recovers from true connection drops.
 func TestBuildFFmpegArgsReconnect(t *testing.T) {
 	channel := config.Channel{Name: "test", URL: "http://example.com/stream.m3u8"}
 	args := buildFFmpegArgs(channel, "")
 
-	iIdx := -1
-	for i, a := range args {
-		if a == "-i" {
-			iIdx = i
-			break
-		}
-	}
+	iIdx := findInputIdx(args)
 	if iIdx == -1 {
 		t.Fatal("-i flag not found in args")
 	}
 	preInput := args[:iIdx]
 
-	for _, flag := range []string{"-reconnect", "-reconnect_at_eof", "-reconnect_streamed"} {
+	if !contains(preInput, "-reconnect") {
+		t.Error("-reconnect missing before -i — stream will not recover from upstream drops")
+	}
+}
+
+// TestBuildFFmpegArgsReconnectAtEofNotDefault confirms that -reconnect_at_eof
+// and -reconnect_streamed are absent by default (see Channel.Reconnect doc).
+func TestBuildFFmpegArgsReconnectAtEofNotDefault(t *testing.T) {
+	channel := config.Channel{Name: "test", URL: "https://example.com/live.m3u8"}
+	args := buildFFmpegArgs(channel, "")
+	for _, flag := range []string{"-reconnect_at_eof", "-reconnect_streamed"} {
+		if contains(args, flag) {
+			t.Errorf("flag %q must not be present by default — breaks HLS streams with rotating redirect targets", flag)
+		}
+	}
+}
+
+// TestBuildFFmpegArgsReconnectOptIn verifies that a channel with Reconnect:true
+// gets the full set of reconnect flags including -reconnect_at_eof and
+// -reconnect_streamed, for sources (e.g. direct MPEG-TS over HTTP) that need them.
+func TestBuildFFmpegArgsReconnectOptIn(t *testing.T) {
+	channel := config.Channel{Name: "test", URL: "https://example.com/stream.ts", Reconnect: true}
+	args := buildFFmpegArgs(channel, "")
+	iIdx := findInputIdx(args)
+	if iIdx == -1 {
+		t.Fatal("-i flag not found in args")
+	}
+	preInput := args[:iIdx]
+	for _, flag := range []string{"-reconnect", "-reconnect_at_eof", "-reconnect_streamed", "-reconnect_delay_max"} {
 		if !contains(preInput, flag) {
-			t.Errorf("reconnect flag %q missing before -i — stream will not recover from upstream drops", flag)
+			t.Errorf("flag %q missing before -i for channel with Reconnect:true", flag)
 		}
 	}
 }
@@ -596,6 +617,19 @@ func TestBuildFFmpegArgsReconnectRTSP(t *testing.T) {
 	for _, flag := range []string{"-reconnect", "-reconnect_at_eof", "-reconnect_streamed", "-reconnect_delay_max"} {
 		if contains(args, flag) {
 			t.Errorf("RTSP URL: reconnect flag %q must not be present (HTTP-only option)", flag)
+		}
+	}
+}
+
+// TestBuildFFmpegArgsReconnectOptInRTSP verifies that Reconnect:true on an RTSP
+// channel still produces no reconnect flags — the HTTP(S) URL guard is the
+// sole gate, not the Reconnect field alone.
+func TestBuildFFmpegArgsReconnectOptInRTSP(t *testing.T) {
+	channel := config.Channel{Name: "test", URL: "rtsp://camera.local/stream", Reconnect: true}
+	args := buildFFmpegArgs(channel, "")
+	for _, flag := range []string{"-reconnect", "-reconnect_at_eof", "-reconnect_streamed", "-reconnect_delay_max"} {
+		if contains(args, flag) {
+			t.Errorf("RTSP URL with Reconnect:true: flag %q must not be present — HTTP(S) guard must be the sole gate", flag)
 		}
 	}
 }

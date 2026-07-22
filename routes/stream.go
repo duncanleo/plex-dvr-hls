@@ -84,13 +84,13 @@ func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 
 	// -reconnect* flags are HTTP(S)-only; passing them to RTSP or other
 	// protocols causes ffmpeg to error on startup.
+	// -reconnect_at_eof/-reconnect_streamed are opt-in via channel.Reconnect
+	// (see Channel.Reconnect doc for why they are off by default).
 	if strings.HasPrefix(channel.URL, "http://") || strings.HasPrefix(channel.URL, "https://") {
-		args = append(args,
-			"-reconnect", "1",
-			"-reconnect_at_eof", "1",
-			"-reconnect_streamed", "1",
-			"-reconnect_delay_max", "5",
-		)
+		args = append(args, "-reconnect", "1", "-reconnect_delay_max", "5")
+		if channel.Reconnect {
+			args = append(args, "-reconnect_at_eof", "1", "-reconnect_streamed", "1")
+		}
 	}
 
 	args = append(args, "-i", channel.URL)

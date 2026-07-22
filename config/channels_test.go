@@ -127,6 +127,31 @@ func TestLoadChannelsFromFileEmptyRejectsAndKeepsPrevious(t *testing.T) {
 	}
 }
 
+// TestLoadChannelsFromFileReconnectTag verifies that the Reconnect field is
+// correctly unmarshaled from JSON. A mistyped json tag (e.g. "Reconnect"
+// instead of "reconnect") would silently leave the field as false even when
+// channels.json sets it to true, making the feature undetectable without this test.
+func TestLoadChannelsFromFileReconnectTag(t *testing.T) {
+	t.Cleanup(func() { channels = nil })
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "channels.json")
+	content := `[{"name":"live","url":"http://example.com/stream.ts","reconnect":true}]`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := loadChannelsFromFile(path); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	ch, ok := GetChannel(0)
+	if !ok {
+		t.Fatal("channel not found")
+	}
+	if !ch.Reconnect {
+		t.Error("Reconnect should be true after loading from JSON with \"reconnect\":true — check json struct tag")
+	}
+}
+
 // TestRunWatchLoopAtomicSave verifies that renaming a temp file over channels.json
 // (the standard atomic-save pattern used by editors and deployment tooling) triggers
 // a reload. Previously the Remove/Rename branch only re-added the watch without

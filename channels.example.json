@@ -1,10 +1,10 @@
 [
   {
-    "name": "Al Jazeera English",
+    "name": "Al Jazeera English (HLS)",
     "url": "http://aljazeera-eng-hd-live.hls.adaptive.level3.net/aljazeera/english2/index.m3u8"
   },
   {
-    "name": "PGA Tour on CBS",
+    "name": "PGA Tour on CBS (HLS via proxy)",
     "url": "http://cbssportsliveios-i.akamaihd.net/hls/live/207523/pgatour_simulcast/desktop.m3u8",
     "proxy": {
       "host": "proxy.somewhere.com:3128",
@@ -13,10 +13,16 @@
     }
   },
   {
+    "name": "Direct MPEG-TS stream (reconnect safe)",
+    "url": "http://example.com:8080/stream.ts",
+    "reconnect": true
+  },
+  {
     "name": "Example with all optional fields",
     "url": "rtsp://example.com/stream",
     "disableTranscode": true,
     "disableAudioTranscode": true,
+    "reconnect": false,
     "userAgent": "Mozilla/5.0",
     "referer": "https://example.com",
     "icon": "https://example.com/icon.png"

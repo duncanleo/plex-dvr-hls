@@ -57,6 +57,7 @@ services:
      | `url` | string | Stream URL (M3U8, RTSP, or any ffmpeg-supported input) |
      | `disableTranscode` | bool | Pass video through unchanged (`-c:v copy`) instead of re-encoding |
      | `disableAudioTranscode` | bool | Pass audio through unchanged (`-c:a copy`) instead of re-encoding at 256k |
+     | `reconnect` | bool | Enable `-reconnect_at_eof` and `-reconnect_streamed` for this channel. **Off by default** — HLS sources must leave this off (causes infinite reconnect loop on providers with rotating 302 redirects). Enable only for direct MPEG-TS or other non-HLS HTTP sources (e.g. `http://host/stream.ts`). |
      | `userAgent` | string | Custom `User-Agent` header sent to the stream source |
      | `referer` | string | Custom `Referer` header sent to the stream source |
      | `icon` | string | URL to channel logo (used in XMLTV EPG) |
