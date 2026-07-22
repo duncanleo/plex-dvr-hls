@@ -29,6 +29,12 @@ uses for DVRs and streams channel sources through `ffmpeg`.
 
 - Keep changes scoped to the requested behaviour. Prefer a small, focused diff
   over unrelated cleanup.
+- Write commit subjects in Conventional Commits form:
+  `<type>(<optional scope>): <description>`. Use a type recognized by
+  `cog.toml` (for example `feat`, `fix`, `docs`, `test`, or `chore`).
+- Every commit an agent creates must include a `Co-Authored-By` trailer for
+  that agent's own configured name and email. Configure an identity before
+  committing if one is not already available.
 - Run `gofmt` on every changed Go file. Do not hand-format generated output.
 - Add or update tests with behaviour changes. Route tests should use the
   existing test seams rather than a real `ffmpeg` binary or external stream.
