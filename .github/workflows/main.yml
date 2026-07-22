@@ -20,11 +20,6 @@ jobs:
           cache: true
         id: go
 
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-
       - name: Extract repository name
         shell: bash
         run: echo "repo=${GITHUB_REPOSITORY##*/}" >> $GITHUB_OUTPUT
@@ -46,10 +41,14 @@ jobs:
           GOOS=windows GOARCH=arm go build -v -o ${GITHUB_REPOSITORY##*/}-windows-arm.exe ./cmd/...
           GOOS=windows GOARCH=arm64 go build -v -o ${GITHUB_REPOSITORY##*/}-windows-arm64.exe ./cmd/...
 
-      - name: Generate changelog
+      - name: Set up Cocogitto
+        uses: cocogitto/cocogitto-action@v3
+        with:
+          check: false
+
+      - name: Generate release notes
         run: |
-          npm install -g conventional-changelog-cli
-          conventional-changelog -p angular -i CHANGELOG.md -s -r 2 -v
+          cog changelog --at "${GITHUB_REF_NAME}" --template full_hash > CHANGELOG.md
 
       - uses: ncipollo/release-action@v1
         with:

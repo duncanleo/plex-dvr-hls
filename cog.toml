@@ -1,0 +1,18 @@
+tag_prefix = "v"
+ignore_merge_commits = true
+
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+owner = "duncanleo"
+repository = "plex-dvr-hls"
+
+[commit_types]
+build = { omit_from_changelog = true }
+chore = { omit_from_changelog = true }
+ci = { omit_from_changelog = true }
+docs = { omit_from_changelog = true }
+refactor = { omit_from_changelog = true }
+style = { omit_from_changelog = true }
+test = { omit_from_changelog = true }

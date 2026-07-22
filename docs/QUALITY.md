@@ -30,6 +30,13 @@ pre-merge check for a non-trivial change to `config` or streaming.
 - No secrets, private stream URLs, generated state, or local configuration are
   included in the diff.
 
+## Release notes
+
+Tagged GitHub releases generate their body with Cocogitto's `full_hash`
+template. The tag prefix and changelog inclusion rules are defined in
+[`cog.toml`](../cog.toml); the generated `CHANGELOG.md` is workflow output and
+is not committed.
+
 ## Keeping entropy low
 
 Treat review feedback and repeated failures as candidates for a durable rule:
