@@ -46,7 +46,7 @@ services:
 1. Download a binary release from GitHub, or clone the repository and compile on your machine (e.g. with `GOOS=linux GOARCH=amd64 go build -o plex-dvr-hls-linux-amd64 cmd/main.go`)
 2. Create a `config.json` in the working directory and fill in the necessary.
    - Possible values for `encoder_profile` are `vaapi`, `video_toolbox`, `omx`, `nvenc` and `cpu`. A sample `config.example.json` is available on GitHub.
-     - `nvenc` requires an NVIDIA GPU and ffmpeg with NVENC support. For Docker, see [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+     - `nvenc` requires an NVIDIA GPU and ffmpeg 4.4 or newer with NVENC support (it uses the `p3` preset with the `ull` ultra-low-latency tune). For Docker, see [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). Unlike the other profiles, `nvenc` does not request interlaced (field) encoding, because NVENC fails to start on GPUs without field-encoding support. It outputs progressive video and does not deinterlace, so interlaced sources (e.g. 1080i broadcasts) may show combing.
    - **Optional:** Set `device_id` to a specific value (e.g. `"30480554"`) to maintain a stable device ID. If omitted, a random ID will be generated on first run and automatically saved to `.device_id` for persistence across restarts. Priority order: `config.json` > `.device_id` file > auto-generate new.
 3. Create a `channels.json` and fill in the necessary.
    - A sample `channels.example.json` is available on GitHub.
