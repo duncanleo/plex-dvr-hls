@@ -201,31 +201,39 @@ func TestBuildFFmpegArgsEncoderProfiles(t *testing.T) {
 		profile      config.EncoderProfile
 		wantPreInput []string
 		wantCodec    string
+		wantTune     string // "" means no -tune arg
+		wantFlags    string // "" means no -flags arg
 	}{
 		{
 			profile:      config.EncoderProfileCPU,
 			wantPreInput: nil,
 			wantCodec:    "libx264",
+			wantTune:     "zerolatency",
+			wantFlags:    "+ilme+ildct",
 		},
 		{
 			profile:      config.EncoderProfileVAAPI,
 			wantPreInput: []string{"-vaapi_device", "-hwaccel", "vaapi", "-hwaccel_output_format"},
 			wantCodec:    "h264_vaapi",
+			wantFlags:    "+ilme+ildct",
 		},
 		{
 			profile:      config.EncoderProfileVideoToolbox,
 			wantPreInput: []string{"-hwaccel", "videotoolbox"},
 			wantCodec:    "h264_videotoolbox",
+			wantFlags:    "+ilme+ildct",
 		},
 		{
 			profile:      config.EncoderProfileNVENC,
 			wantPreInput: []string{"-hwaccel", "cuda", "-hwaccel_output_format"},
 			wantCodec:    "h264_nvenc",
+			wantTune:     "ull",
 		},
 		{
 			profile:      config.EncoderProfileOMX,
 			wantPreInput: nil,
 			wantCodec:    "h264_omx",
+			wantFlags:    "+ilme+ildct",
 		},
 	}
 
@@ -247,6 +255,12 @@ func TestBuildFFmpegArgsEncoderProfiles(t *testing.T) {
 			}
 			if !contains(args[iIdx:], tt.wantCodec) {
 				t.Errorf("profile %s: expected codec %q after -i", tt.profile, tt.wantCodec)
+			}
+			if got := argValue(args, "-tune"); got != tt.wantTune {
+				t.Errorf("profile %s: expected -tune %q, got %q", tt.profile, tt.wantTune, got)
+			}
+			if got := argValue(args, "-flags"); got != tt.wantFlags {
+				t.Errorf("profile %s: expected -flags %q, got %q", tt.profile, tt.wantFlags, got)
 			}
 		})
 	}
@@ -270,6 +284,34 @@ func TestBuildFFmpegArgsDisableTranscode(t *testing.T) {
 		if contains(args, enc) {
 			t.Errorf("disableTranscode: unexpected encoder %q", enc)
 		}
+	}
+	if contains(args, "-tune") {
+		t.Error("disableTranscode: -tune must not be passed when copying video")
+	}
+}
+
+// TestBuildFFmpegArgsDisableTranscodeNVENC verifies that copying video under
+// the NVENC profile keeps the interlace flags, which are only dropped when
+// NVENC is actually encoding.
+func TestBuildFFmpegArgsDisableTranscodeNVENC(t *testing.T) {
+	nvenc := config.EncoderProfileNVENC
+	config.Cfg.EncoderProfile = &nvenc
+	defer func() { config.Cfg.EncoderProfile = nil }()
+
+	channel := config.Channel{Name: "test", URL: "http://example.com", DisableTranscode: true}
+	args := buildFFmpegArgs(channel, "")
+
+	if got := argValue(args, "-c:v"); got != "copy" {
+		t.Errorf("expected -c:v copy, got %q", got)
+	}
+	if contains(args, "h264_nvenc") {
+		t.Error("unexpected h264_nvenc encoder when copying video")
+	}
+	if contains(args, "-tune") {
+		t.Error("-tune must not be passed when copying video")
+	}
+	if got := argValue(args, "-flags"); got != "+ilme+ildct" {
+		t.Errorf("expected -flags +ilme+ildct, got %q", got)
 	}
 }
 
@@ -688,4 +730,15 @@ func TestBuildFFmpegArgsMobile(t *testing.T) {
 	if hasScaling(buildFFmpegArgs(channel, "")) {
 		t.Error("default transcode should not include -s 1280x720")
 	}
+}
+
+// argValue returns the value following the first occurrence of flag, or ""
+// if the flag is absent.
+func argValue(args []string, flag string) string {
+	for i, a := range args {
+		if a == flag && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
 }

@@ -45,6 +45,9 @@ func (fw flushWriter) Write(p []byte) (int, error) {
 
 func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 	var args []string
+	// Read once so every branch sees the same profile even if the config
+	// reloads while args are being built.
+	profile := config.Cfg.GetEncoderProfile()
 
 	if channel.ProxyConfig != nil {
 		args = append(args,
@@ -66,7 +69,7 @@ func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 		args = append(args, "-headers", headers)
 	}
 
-	switch config.Cfg.GetEncoderProfile() {
+	switch profile {
 	case config.EncoderProfileVAAPI:
 		args = append(args,
 			"-vaapi_device", "/dev/dri/renderD128",
@@ -98,7 +101,7 @@ func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 	if channel.DisableTranscode {
 		args = append(args, "-c:v", "copy")
 	} else {
-		switch config.Cfg.GetEncoderProfile() {
+		switch profile {
 		case config.EncoderProfileVideoToolbox:
 			args = append(args, "-c:v", "h264_videotoolbox")
 		case config.EncoderProfileVAAPI:
@@ -106,9 +109,11 @@ func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 		case config.EncoderProfileOMX:
 			args = append(args, "-c:v", "h264_omx")
 		case config.EncoderProfileNVENC:
-			args = append(args, "-c:v", "h264_nvenc", "-preset", "p3")
+			// NVENC does not accept libx264's "zerolatency" tune; "ull"
+			// (ultra-low latency) is its equivalent.
+			args = append(args, "-c:v", "h264_nvenc", "-preset", "p3", "-tune", "ull")
 		default:
-			args = append(args, "-c:v", "libx264", "-preset", "superfast")
+			args = append(args, "-c:v", "libx264", "-preset", "superfast", "-tune", "zerolatency")
 		}
 	}
 
@@ -122,11 +127,14 @@ func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 		"-copyinkf",
 		"-metadata", "service_provider=AMAZING",
 		"-metadata", fmt.Sprintf("service_name=%s", strings.ReplaceAll(channel.Name, " ", "")),
-		"-tune", "zerolatency",
 		"-mbd", "rd",
-		"-flags", "+ilme+ildct",
-		"-fflags", "+genpts",
 	)
+	// +ildct makes NVENC use field (interlaced) encoding, which it refuses
+	// to initialise on GPUs without field-encoding support.
+	if channel.DisableTranscode || profile != config.EncoderProfileNVENC {
+		args = append(args, "-flags", "+ilme+ildct")
+	}
+	args = append(args, "-fflags", "+genpts")
 
 	switch transcode {
 	case "mobile", "internet720":
