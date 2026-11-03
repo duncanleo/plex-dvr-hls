@@ -39,7 +39,8 @@ app attempts to persist `.device_id` in the working directory.
 - Invalid startup configuration or an unavailable initial channel source stops
   the process because no usable state exists.
 - A failed channel reload logs the error and retains the previous list. This
-  includes channels with invalid `input` options (negative retry counts).
+  includes channels with invalid `input` options (a positive live start
+  index, or values outside ffmpeg's 32-bit range).
 - Optional ffmpeg input options (`input` in `config.json` and per channel in
   `channels.json`) are off by default. HLS-only options are skipped for
   non-`.m3u8` URLs because ffmpeg rejects them on other inputs. For live HLS

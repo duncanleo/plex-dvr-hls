@@ -76,11 +76,11 @@ Optional ffmpeg input options. **All are off by default** — an unset option is
 | `config.json` (`input`) | `channels.json` (`input`) | ffmpeg flag | Applies to | Purpose |
 |---|---|---|---|---|
 | `realtime` | `realtime` | `-re` | all inputs | Read the source at its native rate instead of as fast as it downloads |
-| `hls_live_start_index` | `hlsLiveStartIndex` | `-live_start_index` | `.m3u8` only | Segment to start live streams at; negative counts back from the live edge (ffmpeg default `-3`) |
+| `hls_live_start_index` | `hlsLiveStartIndex` | `-live_start_index` | `.m3u8` only | Segment to start live streams at; must be `<= 0` (negative counts back from the live edge; ffmpeg default `-3`) |
 | `hls_seg_max_retry` | `hlsSegMaxRetry` | `-seg_max_retry` | `.m3u8` only | Retries for a failed segment download (ffmpeg default `0` skips the segment) |
 | `hls_max_reload` | `hlsMaxReload` | `-max_reload` | `.m3u8` only | Consecutive playlist reloads with no new segment (including failed reloads) before the stream ends. Default is version dependent: `3` in ffmpeg 6.1 (the Docker image), `100` in later releases |
 
-Precedence per option: channel value → `config.json` value → unset. Retry counts must be `>= 0`; invalid values fail startup, or keep the previous channels on a hot reload.
+Precedence per option: channel value → `config.json` value → unset. `hls_live_start_index` must be `<= 0`, and retry counts between `0` and `2147483647` (ffmpeg stores all three as 32-bit ints); invalid values fail startup, or keep the previous channels on a hot reload.
 
 **Known limitation: HLS detection is by URL extension.** HLS-only options are applied only when the URL path ends in `.m3u8` (case-insensitive; query strings are ignored), because ffmpeg refuses to start when given them on other inputs. Sources that serve HLS from an extensionless URL (for example `http://host/live/user/pass/123`), or that redirect to an `.m3u8`, do not get the HLS-only options; `realtime` still applies. A log line is written when a channel's own `input` sets HLS-only options that are skipped.
 

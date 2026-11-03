@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
 )
@@ -19,8 +20,8 @@ import (
 type InputOptions struct {
 	// Realtime adds -re: read the input at its native rate.
 	Realtime *bool `json:"realtime,omitempty"`
-	// HLSLiveStartIndex adds -live_start_index (HLS only). Negative values
-	// count back from the live edge; ffmpeg's default is -3.
+	// HLSLiveStartIndex adds -live_start_index (HLS only). Must be <= 0:
+	// negative values count back from the live edge; ffmpeg's default is -3.
 	HLSLiveStartIndex *int `json:"hlsLiveStartIndex,omitempty"`
 	// HLSSegMaxRetry adds -seg_max_retry (HLS only). ffmpeg's default of 0
 	// skips a segment after a single failed download.
@@ -54,17 +55,38 @@ func (c *InputConfig) options() *InputOptions {
 	}
 }
 
-// Validate rejects values ffmpeg would refuse at startup, so a bad setting is
-// reported when configuration loads rather than when a channel is tuned.
+// Validate rejects values ffmpeg would refuse at startup, or that would break
+// live playback, so a bad setting is reported when configuration loads rather
+// than when a channel is tuned. ffmpeg stores all three HLS options as 32-bit
+// ints, so larger values make ffmpeg fail to start.
 func (o *InputOptions) Validate() error {
 	if o == nil {
 		return nil
 	}
-	if o.HLSSegMaxRetry != nil && *o.HLSSegMaxRetry < 0 {
-		return fmt.Errorf("hls seg max retry must be >= 0, got %d", *o.HLSSegMaxRetry)
+	if o.HLSLiveStartIndex != nil {
+		v := *o.HLSLiveStartIndex
+		// Positive values count from the oldest segment, which on a live
+		// playlist is the next to expire.
+		if v > 0 {
+			return fmt.Errorf("hls live start index must be <= 0 (counts back from the live edge), got %d", v)
+		}
+		if int64(v) < math.MinInt32 {
+			return fmt.Errorf("hls live start index must be >= %d, got %d", math.MinInt32, v)
+		}
 	}
-	if o.HLSMaxReload != nil && *o.HLSMaxReload < 0 {
-		return fmt.Errorf("hls max reload must be >= 0, got %d", *o.HLSMaxReload)
+	if err := checkCount("hls seg max retry", o.HLSSegMaxRetry); err != nil {
+		return err
+	}
+	return checkCount("hls max reload", o.HLSMaxReload)
+}
+
+// checkCount validates a retry-style count against ffmpeg's 0..INT32_MAX range.
+func checkCount(name string, p *int) error {
+	if p == nil {
+		return nil
+	}
+	if v := int64(*p); v < 0 || v > math.MaxInt32 {
+		return fmt.Errorf("%s must be between 0 and %d, got %d", name, math.MaxInt32, *p)
 	}
 	return nil
 }

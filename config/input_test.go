@@ -2,8 +2,10 @@ package config
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -68,9 +70,12 @@ func TestInputOptionsValidate(t *testing.T) {
 		{"empty", &InputOptions{}, false},
 		{"valid", &InputOptions{Realtime: boolPtr(true), HLSLiveStartIndex: intPtr(-5), HLSSegMaxRetry: intPtr(3), HLSMaxReload: intPtr(100)}, false},
 		{"zero retries", &InputOptions{HLSSegMaxRetry: intPtr(0), HLSMaxReload: intPtr(0)}, false},
-		{"positive live start index", &InputOptions{HLSLiveStartIndex: intPtr(2)}, false},
+		{"zero live start index", &InputOptions{HLSLiveStartIndex: intPtr(0)}, false},
+		{"positive live start index", &InputOptions{HLSLiveStartIndex: intPtr(2)}, true},
 		{"negative seg retry", &InputOptions{HLSSegMaxRetry: intPtr(-1)}, true},
 		{"negative max reload", &InputOptions{HLSMaxReload: intPtr(-1)}, true},
+		{"int32 max counts", &InputOptions{HLSSegMaxRetry: intPtr(math.MaxInt32), HLSMaxReload: intPtr(math.MaxInt32)}, false},
+		{"int32 min live start index", &InputOptions{HLSLiveStartIndex: intPtr(math.MinInt32)}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -79,6 +84,29 @@ func TestInputOptionsValidate(t *testing.T) {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+// TestInputOptionsValidateInt32Bounds verifies values outside ffmpeg's 32-bit
+// option range are rejected. Such values are only representable when int is
+// 64-bit.
+func TestInputOptionsValidateInt32Bounds(t *testing.T) {
+	if strconv.IntSize < 64 {
+		t.Skip("int is 32-bit; out-of-range values are not representable")
+	}
+	// Non-constant so the conversion compiles on 32-bit targets too.
+	maxI32, minI32 := int64(math.MaxInt32), int64(math.MinInt32)
+	over := int(maxI32 + 1)
+	under := int(minI32 - 1)
+
+	for name, opts := range map[string]*InputOptions{
+		"seg retry over":         {HLSSegMaxRetry: &over},
+		"max reload over":        {HLSMaxReload: &over},
+		"live start index under": {HLSLiveStartIndex: &under},
+	} {
+		if err := opts.Validate(); err == nil {
+			t.Errorf("%s: expected error, got nil", name)
+		}
 	}
 }
 
@@ -151,6 +179,9 @@ func TestLoadChannelsFromFileInvalidInputKeepsPrevious(t *testing.T) {
 	ch, ok := GetChannel(0)
 	if !ok || ch.Name != "before" {
 		t.Errorf("channels modified after invalid reload: got %+v", ch)
+	}
+	if count := GetChannelCount(); count != 1 {
+		t.Errorf("channels modified after invalid reload: got %d channels, want 1", count)
 	}
 }
 
