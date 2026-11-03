@@ -93,6 +93,31 @@ func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 		}
 	}
 
+	// Input options must precede -i. All are opt-in: unset options are
+	// omitted so the default command is unchanged.
+	input := config.ResolveInputOptions(config.Cfg, channel)
+	if input.HasHLSOptions() {
+		// HLS demuxer options make ffmpeg fail to start on non-HLS inputs.
+		if config.IsHLSURL(channel.URL) {
+			if input.HLSLiveStartIndex != nil {
+				args = append(args, "-live_start_index", strconv.Itoa(*input.HLSLiveStartIndex))
+			}
+			if input.HLSSegMaxRetry != nil {
+				args = append(args, "-seg_max_retry", strconv.Itoa(*input.HLSSegMaxRetry))
+			}
+			if input.HLSMaxReload != nil {
+				args = append(args, "-max_reload", strconv.Itoa(*input.HLSMaxReload))
+			}
+		} else if channel.Input.HasHLSOptions() {
+			// Only report options the channel set itself; global HLS defaults
+			// are expected not to apply to non-HLS channels.
+			log.Printf("[STREAM] '%s' is not an HLS (.m3u8) URL; ignoring its HLS input options\n", channel.Name)
+		}
+	}
+	if input.Realtime != nil && *input.Realtime {
+		args = append(args, "-re")
+	}
+
 	args = append(args, "-i", channel.URL)
 
 	if channel.DisableTranscode {

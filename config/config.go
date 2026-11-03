@@ -24,6 +24,9 @@ type Config struct {
 	EncoderProfile *EncoderProfile `json:"encoder_profile"`
 	TunerCount     *int            `json:"tuner_count"`
 	DeviceID       *string         `json:"device_id"`
+	// Input holds default ffmpeg input options for every channel. Unset
+	// options are omitted from the ffmpeg command.
+	Input *InputConfig `json:"input,omitempty"`
 }
 
 func (c Config) GetEncoderProfile() EncoderProfile {
@@ -74,6 +77,10 @@ func LoadConfig() error {
 	err = decoder.Decode(&Cfg)
 	if err != nil {
 		return err
+	}
+
+	if err := Cfg.Input.options().Validate(); err != nil {
+		return fmt.Errorf("config.json input: %w", err)
 	}
 
 	// Device ID priority: config.json > .device_id file > generate new

@@ -48,6 +48,7 @@ services:
    - Possible values for `encoder_profile` are `vaapi`, `video_toolbox`, `omx`, `nvenc` and `cpu`. A sample `config.example.json` is available on GitHub.
      - `nvenc` requires an NVIDIA GPU and ffmpeg with NVENC support. For Docker, see [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
    - **Optional:** Set `device_id` to a specific value (e.g. `"30480554"`) to maintain a stable device ID. If omitted, a random ID will be generated on first run and automatically saved to `.device_id` for persistence across restarts. Priority order: `config.json` > `.device_id` file > auto-generate new.
+   - **Optional:** Set `input` to apply ffmpeg input options to every channel (including channels loaded from `PLAYLIST`). See [Input options](#input-options).
 3. Create a `channels.json` and fill in the necessary.
    - A sample `channels.example.json` is available on GitHub.
    - Each channel supports the following fields:
@@ -64,8 +65,42 @@ services:
      | `proxy.host` | string | HTTP proxy host and port (e.g. `proxy.example.com:3128`) |
      | `proxy.username` | string | Proxy authentication username |
      | `proxy.password` | string | Proxy authentication password |
+     | `input` | object | Per-channel ffmpeg input options; each field overrides the `config.json` `input` value. See [Input options](#input-options). |
 4. Add the server to the Plex DVR e.g. `http://<ip of machine>:5004`.
    - When prompted for an Electronic Programme Guide, you can either use one if it's available, or use the auto-generated one by entering `http://<ip of machine>:5004/xmltv`
+
+### Input options
+
+Optional ffmpeg input options. **All are off by default** — an unset option is left out of the ffmpeg command, so existing setups are unchanged.
+
+| `config.json` (`input`) | `channels.json` (`input`) | ffmpeg flag | Applies to | Purpose |
+|---|---|---|---|---|
+| `realtime` | `realtime` | `-re` | all inputs | Read the source at its native rate instead of as fast as it downloads |
+| `hls_live_start_index` | `hlsLiveStartIndex` | `-live_start_index` | `.m3u8` only | Segment to start live streams at; negative counts back from the live edge (ffmpeg default `-3`) |
+| `hls_seg_max_retry` | `hlsSegMaxRetry` | `-seg_max_retry` | `.m3u8` only | Retries for a failed segment download (ffmpeg default `0` skips the segment) |
+| `hls_max_reload` | `hlsMaxReload` | `-max_reload` | `.m3u8` only | Consecutive playlist reloads with no new segment (including failed reloads) before the stream ends. Default is version dependent: `3` in ffmpeg 6.1 (the Docker image), `100` in later releases |
+
+Precedence per option: channel value → `config.json` value → unset. Retry counts must be `>= 0`; invalid values fail startup, or keep the previous channels on a hot reload.
+
+**Known limitation: HLS detection is by URL extension.** HLS-only options are applied only when the URL path ends in `.m3u8` (case-insensitive; query strings are ignored), because ffmpeg refuses to start when given them on other inputs. Sources that serve HLS from an extensionless URL (for example `http://host/live/user/pass/123`), or that redirect to an `.m3u8`, do not get the HLS-only options; `realtime` still applies. A log line is written when a channel's own `input` sets HLS-only options that are skipped.
+
+**Buffering on live HLS sources with long segments.** Without `-re`, ffmpeg forwards each segment as soon as it downloads. With ~10 s segments, Plex receives a ~30 s burst at tune-in followed by multi-second gaps, and clients (especially remote ones) buffer even though VLC plays the same URL fine. Enabling `realtime` paces output at 1×, so the initial fetch becomes a cushion that absorbs the gaps:
+
+```json
+{
+  "name": "Amazing Tuner",
+  "encoder_profile": "cpu",
+  "input": {
+    "realtime": true,
+    "hls_seg_max_retry": 3,
+    "hls_max_reload": 100
+  }
+}
+```
+
+The trade-off is extra delay behind live (roughly `-live_start_index` × segment length). If buffering persists, raise the cushion for that channel with `"input": { "hlsLiveStartIndex": -5 }`. `hls_max_reload: 100` matches the newer ffmpeg default and raises 6.1's limit of `3`, which can end a stream after roughly 15 s without a new segment.
+
+`realtime` stops ffmpeg reading ahead of real time; it does not stop it falling behind after a slow segment download. ffmpeg 6.1 then reads at full speed until it catches up (a short burst). Newer ffmpeg catches up at only 1.05× by default (`-readrate_catchup`, not exposed here), so repeated stalls can push it behind the provider's playlist window, at which point expired segments are skipped. Keep the live start index well inside the playlist window (e.g. `-3` to `-5` for a 6-segment playlist).
 
 ### Environment Variables
 

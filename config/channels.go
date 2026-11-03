@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -37,6 +38,10 @@ type Channel struct {
 	UserAgent *string `json:"userAgent,omitempty"`
 	Referer   *string `json:"referer,omitempty"`
 	Icon      *string `json:"icon,omitempty"`
+
+	// Input overrides config.json input options for this channel, field by
+	// field. See InputOptions.
+	Input *InputOptions `json:"input,omitempty"`
 }
 
 var (
@@ -193,6 +198,12 @@ func loadChannelsFromFile(path string) error {
 
 	if len(channels) == 0 {
 		return errors.New("channels.json decoded to empty list — keeping previous channels")
+	}
+
+	for _, ch := range channels {
+		if err := ch.Input.Validate(); err != nil {
+			return fmt.Errorf("channel %q input: %w — keeping previous channels", ch.Name, err)
+		}
 	}
 
 	SetChannels(channels)

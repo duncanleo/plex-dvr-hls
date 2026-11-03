@@ -38,7 +38,15 @@ app attempts to persist `.device_id` in the working directory.
 
 - Invalid startup configuration or an unavailable initial channel source stops
   the process because no usable state exists.
-- A failed channel reload logs the error and retains the previous list.
+- A failed channel reload logs the error and retains the previous list. This
+  includes channels with invalid `input` options (negative retry counts).
+- Optional ffmpeg input options (`input` in `config.json` and per channel in
+  `channels.json`) are off by default. HLS-only options are skipped for
+  non-`.m3u8` URLs because ffmpeg rejects them on other inputs. For live HLS
+  sources with long segments, `realtime` (`-re`) prevents the burst-then-gap
+  output that makes Plex clients buffer. HLS is detected by the `.m3u8` path
+  extension only, and ffmpeg's `max_reload` default differs by version (3 in
+  6.1, 100 later); see the README "Input options" section for details.
 - A missing or invalid stream channel returns a client error without starting
   `ffmpeg`.
 - A short-lived `ffmpeg` process is retried a bounded number of times. After
