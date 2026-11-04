@@ -116,6 +116,11 @@ func buildFFmpegArgs(channel config.Channel, transcode string) []string {
 	}
 	if input.Realtime != nil && *input.Realtime {
 		args = append(args, "-re")
+		// ffmpeg ignores the burst (with a warning) unless -re is set.
+		if input.RealtimeInitialBurst != nil {
+			args = append(args, "-readrate_initial_burst",
+				strconv.FormatFloat(*input.RealtimeInitialBurst, 'f', -1, 64))
+		}
 	}
 
 	args = append(args, "-i", channel.URL)

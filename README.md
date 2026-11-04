@@ -76,11 +76,12 @@ Optional ffmpeg input options. **All are off by default** — an unset option is
 | `config.json` (`input`) | `channels.json` (`input`) | ffmpeg flag | Applies to | Purpose |
 |---|---|---|---|---|
 | `realtime` | `realtime` | `-re` | all inputs | Read the source at its native rate instead of as fast as it downloads |
+| `realtime_initial_burst` | `realtimeInitialBurst` | `-readrate_initial_burst` | all inputs, only with `realtime` | Seconds of input read at full speed before pacing starts, so Plex gets a startup buffer (ffmpeg default `0.5`). Must be `>= 0`; fractions allowed |
 | `hls_live_start_index` | `hlsLiveStartIndex` | `-live_start_index` | `.m3u8` only | Segment to start live streams at; must be `<= 0` (negative counts back from the live edge; ffmpeg default `-3`) |
 | `hls_seg_max_retry` | `hlsSegMaxRetry` | `-seg_max_retry` | `.m3u8` only | Retries for a failed segment download (ffmpeg default `0` skips the segment) |
 | `hls_max_reload` | `hlsMaxReload` | `-max_reload` | `.m3u8` only | Consecutive playlist reloads with no new segment (including failed reloads) before the stream ends. Default is version dependent: `3` in ffmpeg 6.1 (the Docker image), `100` in later releases |
 
-Precedence per option: channel value → `config.json` value → unset. `hls_live_start_index` must be `<= 0`, and retry counts between `0` and `2147483647` (ffmpeg stores all three as 32-bit ints); invalid values fail startup, or keep the previous channels on a hot reload.
+Precedence per option: channel value → `config.json` value → unset. `realtime_initial_burst` must be `>= 0` and is ignored unless `realtime` resolves to `true` for the channel. `hls_live_start_index` must be `<= 0`, and retry counts between `0` and `2147483647` (ffmpeg stores all three as 32-bit ints); invalid values fail startup, or keep the previous channels on a hot reload.
 
 **Known limitation: HLS detection is by URL extension.** HLS-only options are applied only when the URL path ends in `.m3u8` (case-insensitive; query strings are ignored), because ffmpeg refuses to start when given them on other inputs. Sources that serve HLS from an extensionless URL (for example `http://host/live/user/pass/123`), or that redirect to an `.m3u8`, do not get the HLS-only options; `realtime` still applies. A log line is written when a channel's own `input` sets HLS-only options that are skipped.
 
@@ -92,11 +93,14 @@ Precedence per option: channel value → `config.json` value → unset. `hls_liv
   "encoder_profile": "cpu",
   "input": {
     "realtime": true,
+    "realtime_initial_burst": 10,
     "hls_seg_max_retry": 3,
     "hls_max_reload": 100
   }
 }
 ```
+
+With plain `realtime`, output starts at exactly 1×, so Plex fills its startup buffer slowly and the first slow segment can stall playback right after tune-in. `realtime_initial_burst` sends that many seconds at full speed first; ffmpeg then stays that far ahead of real time. Keep it well below the live start offset (about 3 × segment length with the default index of `-3`, so ~30 s for 10 s segments). Otherwise ffmpeg reaches the live edge and the burst-then-gap pattern returns. `10` leaves ~20 s of cushion on such sources.
 
 The trade-off is extra delay behind live (roughly `-live_start_index` × segment length). If buffering persists, raise the cushion for that channel with `"input": { "hlsLiveStartIndex": -5 }`. `hls_max_reload: 100` matches the newer ffmpeg default and raises 6.1's limit of `3`, which can end a stream after roughly 15 s without a new segment.
 

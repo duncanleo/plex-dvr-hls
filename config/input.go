@@ -16,10 +16,16 @@ import (
 // pacing, ffmpeg's HLS demuxer forwards each segment as soon as it downloads,
 // so Plex receives an initial burst followed by multi-second gaps and clients
 // buffer. Realtime (-re) paces output at 1x so the initial fetch becomes a
-// cushion that absorbs those gaps.
+// cushion that absorbs those gaps; RealtimeInitialBurst gives Plex a startup
+// buffer before that pacing starts.
 type InputOptions struct {
 	// Realtime adds -re: read the input at its native rate.
 	Realtime *bool `json:"realtime,omitempty"`
+	// RealtimeInitialBurst adds -readrate_initial_burst: seconds of input
+	// read at full speed before -re pacing starts. ffmpeg then stays this far
+	// ahead of real time. It is only emitted when Realtime is on, because
+	// ffmpeg ignores it without -re. ffmpeg's default is 0.5.
+	RealtimeInitialBurst *float64 `json:"realtimeInitialBurst,omitempty"`
 	// HLSLiveStartIndex adds -live_start_index (HLS only). Must be <= 0:
 	// negative values count back from the live edge; ffmpeg's default is -3.
 	HLSLiveStartIndex *int `json:"hlsLiveStartIndex,omitempty"`
@@ -37,10 +43,11 @@ type InputOptions struct {
 // to match the rest of config.json and supplies defaults for every channel,
 // including channels loaded from PLAYLIST.
 type InputConfig struct {
-	Realtime          *bool `json:"realtime,omitempty"`
-	HLSLiveStartIndex *int  `json:"hls_live_start_index,omitempty"`
-	HLSSegMaxRetry    *int  `json:"hls_seg_max_retry,omitempty"`
-	HLSMaxReload      *int  `json:"hls_max_reload,omitempty"`
+	Realtime             *bool    `json:"realtime,omitempty"`
+	RealtimeInitialBurst *float64 `json:"realtime_initial_burst,omitempty"`
+	HLSLiveStartIndex    *int     `json:"hls_live_start_index,omitempty"`
+	HLSSegMaxRetry       *int     `json:"hls_seg_max_retry,omitempty"`
+	HLSMaxReload         *int     `json:"hls_max_reload,omitempty"`
 }
 
 func (c *InputConfig) options() *InputOptions {
@@ -48,10 +55,11 @@ func (c *InputConfig) options() *InputOptions {
 		return nil
 	}
 	return &InputOptions{
-		Realtime:          c.Realtime,
-		HLSLiveStartIndex: c.HLSLiveStartIndex,
-		HLSSegMaxRetry:    c.HLSSegMaxRetry,
-		HLSMaxReload:      c.HLSMaxReload,
+		Realtime:             c.Realtime,
+		RealtimeInitialBurst: c.RealtimeInitialBurst,
+		HLSLiveStartIndex:    c.HLSLiveStartIndex,
+		HLSSegMaxRetry:       c.HLSSegMaxRetry,
+		HLSMaxReload:         c.HLSMaxReload,
 	}
 }
 
@@ -62,6 +70,12 @@ func (c *InputConfig) options() *InputOptions {
 func (o *InputOptions) Validate() error {
 	if o == nil {
 		return nil
+	}
+	if o.RealtimeInitialBurst != nil {
+		// ffmpeg rejects a negative burst at startup.
+		if v := *o.RealtimeInitialBurst; v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+			return fmt.Errorf("realtime initial burst must be a non-negative number of seconds, got %v", v)
+		}
 	}
 	if o.HLSLiveStartIndex != nil {
 		v := *o.HLSLiveStartIndex
@@ -110,6 +124,9 @@ func ResolveInputOptions(cfg Config, channel Channel) *InputOptions {
 	}
 	if channel.Input.Realtime != nil {
 		resolved.Realtime = channel.Input.Realtime
+	}
+	if channel.Input.RealtimeInitialBurst != nil {
+		resolved.RealtimeInitialBurst = channel.Input.RealtimeInitialBurst
 	}
 	if channel.Input.HLSLiveStartIndex != nil {
 		resolved.HLSLiveStartIndex = channel.Input.HLSLiveStartIndex

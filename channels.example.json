@@ -17,6 +17,7 @@
     "url": "https://example.com/live/channel.m3u8",
     "input": {
       "realtime": true,
+      "realtimeInitialBurst": 10,
       "hlsLiveStartIndex": -5,
       "hlsSegMaxRetry": 3,
       "hlsMaxReload": 100

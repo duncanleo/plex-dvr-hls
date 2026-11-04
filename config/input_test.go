@@ -10,14 +10,15 @@ import (
 	"testing"
 )
 
-func intPtr(i int) *int    { return &i }
-func boolPtr(b bool) *bool { return &b }
+func intPtr(i int) *int           { return &i }
+func boolPtr(b bool) *bool        { return &b }
+func floatPtr(f float64) *float64 { return &f }
 
 // TestResolveInputOptionsUnset verifies that with nothing configured every
 // option stays unset, so buildFFmpegArgs leaves the command unchanged.
 func TestResolveInputOptionsUnset(t *testing.T) {
 	got := ResolveInputOptions(Config{}, Channel{})
-	if got.Realtime != nil || got.HLSLiveStartIndex != nil || got.HLSSegMaxRetry != nil || got.HLSMaxReload != nil {
+	if got.Realtime != nil || got.RealtimeInitialBurst != nil || got.HLSLiveStartIndex != nil || got.HLSSegMaxRetry != nil || got.HLSMaxReload != nil {
 		t.Errorf("expected all options unset, got %+v", got)
 	}
 }
@@ -26,19 +27,24 @@ func TestResolveInputOptionsUnset(t *testing.T) {
 // precedence is applied per field rather than per struct.
 func TestResolveInputOptionsPrecedence(t *testing.T) {
 	cfg := Config{Input: &InputConfig{
-		Realtime:          boolPtr(true),
-		HLSLiveStartIndex: intPtr(-3),
-		HLSSegMaxRetry:    intPtr(3),
+		Realtime:             boolPtr(true),
+		RealtimeInitialBurst: floatPtr(10),
+		HLSLiveStartIndex:    intPtr(-3),
+		HLSSegMaxRetry:       intPtr(3),
 	}}
 	channel := Channel{Input: &InputOptions{
-		Realtime:          boolPtr(false),
-		HLSLiveStartIndex: intPtr(-5),
+		Realtime:             boolPtr(false),
+		RealtimeInitialBurst: floatPtr(5),
+		HLSLiveStartIndex:    intPtr(-5),
 	}}
 
 	got := ResolveInputOptions(cfg, channel)
 
 	if got.Realtime == nil || *got.Realtime {
 		t.Errorf("Realtime: channel false should override global true, got %v", got.Realtime)
+	}
+	if got.RealtimeInitialBurst == nil || *got.RealtimeInitialBurst != 5 {
+		t.Errorf("RealtimeInitialBurst: expected channel 5, got %v", got.RealtimeInitialBurst)
 	}
 	if got.HLSLiveStartIndex == nil || *got.HLSLiveStartIndex != -5 {
 		t.Errorf("HLSLiveStartIndex: expected channel -5, got %v", got.HLSLiveStartIndex)
@@ -76,6 +82,11 @@ func TestInputOptionsValidate(t *testing.T) {
 		{"negative max reload", &InputOptions{HLSMaxReload: intPtr(-1)}, true},
 		{"int32 max counts", &InputOptions{HLSSegMaxRetry: intPtr(math.MaxInt32), HLSMaxReload: intPtr(math.MaxInt32)}, false},
 		{"int32 min live start index", &InputOptions{HLSLiveStartIndex: intPtr(math.MinInt32)}, false},
+		{"zero burst", &InputOptions{RealtimeInitialBurst: floatPtr(0)}, false},
+		{"fractional burst", &InputOptions{RealtimeInitialBurst: floatPtr(7.5)}, false},
+		{"negative burst", &InputOptions{RealtimeInitialBurst: floatPtr(-1)}, true},
+		{"NaN burst", &InputOptions{RealtimeInitialBurst: floatPtr(math.NaN())}, true},
+		{"infinite burst", &InputOptions{RealtimeInitialBurst: floatPtr(math.Inf(1))}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -135,11 +146,12 @@ func TestIsHLSURL(t *testing.T) {
 // option unset.
 func TestInputJSONTags(t *testing.T) {
 	var cfg Config
-	cfgJSON := `{"input":{"realtime":true,"hls_live_start_index":-5,"hls_seg_max_retry":3,"hls_max_reload":100}}`
+	cfgJSON := `{"input":{"realtime":true,"realtime_initial_burst":10,"hls_live_start_index":-5,"hls_seg_max_retry":3,"hls_max_reload":100}}`
 	if err := json.Unmarshal([]byte(cfgJSON), &cfg); err != nil {
 		t.Fatal(err)
 	}
 	if cfg.Input == nil || cfg.Input.Realtime == nil || !*cfg.Input.Realtime ||
+		cfg.Input.RealtimeInitialBurst == nil || *cfg.Input.RealtimeInitialBurst != 10 ||
 		cfg.Input.HLSLiveStartIndex == nil || *cfg.Input.HLSLiveStartIndex != -5 ||
 		cfg.Input.HLSSegMaxRetry == nil || *cfg.Input.HLSSegMaxRetry != 3 ||
 		cfg.Input.HLSMaxReload == nil || *cfg.Input.HLSMaxReload != 100 {
@@ -147,11 +159,12 @@ func TestInputJSONTags(t *testing.T) {
 	}
 
 	var ch Channel
-	chJSON := `{"name":"c","url":"http://x/a.m3u8","input":{"realtime":true,"hlsLiveStartIndex":-5,"hlsSegMaxRetry":3,"hlsMaxReload":100}}`
+	chJSON := `{"name":"c","url":"http://x/a.m3u8","input":{"realtime":true,"realtimeInitialBurst":10,"hlsLiveStartIndex":-5,"hlsSegMaxRetry":3,"hlsMaxReload":100}}`
 	if err := json.Unmarshal([]byte(chJSON), &ch); err != nil {
 		t.Fatal(err)
 	}
 	if ch.Input == nil || ch.Input.Realtime == nil || !*ch.Input.Realtime ||
+		ch.Input.RealtimeInitialBurst == nil || *ch.Input.RealtimeInitialBurst != 10 ||
 		ch.Input.HLSLiveStartIndex == nil || *ch.Input.HLSLiveStartIndex != -5 ||
 		ch.Input.HLSSegMaxRetry == nil || *ch.Input.HLSSegMaxRetry != 3 ||
 		ch.Input.HLSMaxReload == nil || *ch.Input.HLSMaxReload != 100 {
