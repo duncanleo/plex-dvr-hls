@@ -805,25 +805,70 @@ func TestBuildFFmpegArgsInputOptionsNonHLS(t *testing.T) {
 	}
 }
 
-// TestBuildFFmpegArgsInitialBurstRequiresRealtime verifies the burst is only
-// emitted alongside -re (ffmpeg ignores it otherwise), that a channel can
-// override the global burst, and that fractional seconds are formatted
-// without trailing zeros.
-func TestBuildFFmpegArgsInitialBurstRequiresRealtime(t *testing.T) {
-	burst := 10.0
-	config.Cfg.Input = &config.InputConfig{RealtimeInitialBurst: &burst}
-	t.Cleanup(func() { config.Cfg.Input = nil })
+// TestBuildFFmpegArgsInitialBurst verifies the burst is only emitted
+// alongside -re (ffmpeg ignores it otherwise), follows channel > global
+// precedence, is formatted without trailing zeros, and that an explicit 0 is
+// emitted rather than treated as unset.
+func TestBuildFFmpegArgsInitialBurst(t *testing.T) {
+	on, off := true, false
+	globalBurst, chBurst, zero := 10.0, 2.5, 0.0
 
-	channel := config.Channel{Name: "test", URL: "https://example.com/live.m3u8"}
-	if args := buildFFmpegArgs(channel, ""); contains(args, "-readrate_initial_burst") {
-		t.Error("-readrate_initial_burst must be omitted when realtime is off")
+	tests := []struct {
+		name      string
+		global    *config.InputConfig
+		channel   *config.InputOptions
+		wantRe    bool
+		wantBurst string // "" means -readrate_initial_burst must be absent
+	}{
+		{
+			name:   "global burst without realtime is dropped",
+			global: &config.InputConfig{RealtimeInitialBurst: &globalBurst},
+		},
+		{
+			name:      "global realtime and burst",
+			global:    &config.InputConfig{Realtime: &on, RealtimeInitialBurst: &globalBurst},
+			wantRe:    true,
+			wantBurst: "10",
+		},
+		{
+			name:      "channel burst overrides global, fractional formatting",
+			global:    &config.InputConfig{RealtimeInitialBurst: &globalBurst},
+			channel:   &config.InputOptions{Realtime: &on, RealtimeInitialBurst: &chBurst},
+			wantRe:    true,
+			wantBurst: "2.5",
+		},
+		{
+			name:    "channel realtime=false drops inherited burst",
+			global:  &config.InputConfig{Realtime: &on, RealtimeInitialBurst: &globalBurst},
+			channel: &config.InputOptions{Realtime: &off},
+		},
+		{
+			name:      "explicit zero burst is emitted",
+			global:    &config.InputConfig{Realtime: &on},
+			channel:   &config.InputOptions{RealtimeInitialBurst: &zero},
+			wantRe:    true,
+			wantBurst: "0",
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config.Cfg.Input = tt.global
+			t.Cleanup(func() { config.Cfg.Input = nil })
 
-	on, chBurst := true, 2.5
-	channel.Input = &config.InputOptions{Realtime: &on, RealtimeInitialBurst: &chBurst}
-	args := buildFFmpegArgs(channel, "")
-	if v := argValue(args, "-readrate_initial_burst"); v != "2.5" {
-		t.Errorf("-readrate_initial_burst = %q, want channel value 2.5", v)
+			channel := config.Channel{Name: "test", URL: "https://example.com/live.m3u8", Input: tt.channel}
+			args := buildFFmpegArgs(channel, "")
+
+			if got := contains(args, "-re"); got != tt.wantRe {
+				t.Errorf("-re present = %v, want %v (args %v)", got, tt.wantRe, args)
+			}
+			if tt.wantBurst == "" {
+				if contains(args, "-readrate_initial_burst") {
+					t.Errorf("-readrate_initial_burst must be absent, got %v", args)
+				}
+			} else if v := argValue(args, "-readrate_initial_burst"); v != tt.wantBurst {
+				t.Errorf("-readrate_initial_burst = %q, want %q", v, tt.wantBurst)
+			}
+		})
 	}
 }
 

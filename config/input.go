@@ -24,7 +24,8 @@ type InputOptions struct {
 	// RealtimeInitialBurst adds -readrate_initial_burst: seconds of input
 	// read at full speed before -re pacing starts. ffmpeg then stays this far
 	// ahead of real time. It is only emitted when Realtime is on, because
-	// ffmpeg ignores it without -re. ffmpeg's default is 0.5.
+	// ffmpeg ignores it without -re. When -re is set and no burst is given,
+	// ffmpeg uses 0.5. Must be between 0 and MaxRealtimeInitialBurst.
 	RealtimeInitialBurst *float64 `json:"realtimeInitialBurst,omitempty"`
 	// HLSLiveStartIndex adds -live_start_index (HLS only). Must be <= 0:
 	// negative values count back from the live edge; ffmpeg's default is -3.
@@ -50,6 +51,11 @@ type InputConfig struct {
 	HLSMaxReload         *int     `json:"hls_max_reload,omitempty"`
 }
 
+// MaxRealtimeInitialBurst is the largest accepted RealtimeInitialBurst, in
+// seconds. ffmpeg converts the burst to int64 microseconds, which overflows
+// for very large values; an hour is far beyond any useful live cushion.
+const MaxRealtimeInitialBurst = 3600
+
 func (c *InputConfig) options() *InputOptions {
 	if c == nil {
 		return nil
@@ -72,9 +78,11 @@ func (o *InputOptions) Validate() error {
 		return nil
 	}
 	if o.RealtimeInitialBurst != nil {
-		// ffmpeg rejects a negative burst at startup.
-		if v := *o.RealtimeInitialBurst; v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
-			return fmt.Errorf("realtime initial burst must be a non-negative number of seconds, got %v", v)
+		// ffmpeg rejects a negative burst at startup, and huge values
+		// overflow its int64 microsecond conversion. The range check also
+		// rejects NaN (all comparisons false) and both infinities.
+		if v := *o.RealtimeInitialBurst; !(v >= 0 && v <= MaxRealtimeInitialBurst) {
+			return fmt.Errorf("realtime initial burst must be between 0 and %d seconds, got %v", MaxRealtimeInitialBurst, v)
 		}
 	}
 	if o.HLSLiveStartIndex != nil {

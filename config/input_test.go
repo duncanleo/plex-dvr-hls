@@ -85,6 +85,10 @@ func TestInputOptionsValidate(t *testing.T) {
 		{"zero burst", &InputOptions{RealtimeInitialBurst: floatPtr(0)}, false},
 		{"fractional burst", &InputOptions{RealtimeInitialBurst: floatPtr(7.5)}, false},
 		{"negative burst", &InputOptions{RealtimeInitialBurst: floatPtr(-1)}, true},
+		{"max burst", &InputOptions{RealtimeInitialBurst: floatPtr(MaxRealtimeInitialBurst)}, false},
+		{"burst above max", &InputOptions{RealtimeInitialBurst: floatPtr(MaxRealtimeInitialBurst + 0.5)}, true},
+		{"huge burst", &InputOptions{RealtimeInitialBurst: floatPtr(1e300)}, true},
+		{"negative infinite burst", &InputOptions{RealtimeInitialBurst: floatPtr(math.Inf(-1))}, true},
 		{"NaN burst", &InputOptions{RealtimeInitialBurst: floatPtr(math.NaN())}, true},
 		{"infinite burst", &InputOptions{RealtimeInitialBurst: floatPtr(math.Inf(1))}, true},
 	}

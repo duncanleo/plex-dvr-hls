@@ -76,12 +76,12 @@ Optional ffmpeg input options. **All are off by default** — an unset option is
 | `config.json` (`input`) | `channels.json` (`input`) | ffmpeg flag | Applies to | Purpose |
 |---|---|---|---|---|
 | `realtime` | `realtime` | `-re` | all inputs | Read the source at its native rate instead of as fast as it downloads |
-| `realtime_initial_burst` | `realtimeInitialBurst` | `-readrate_initial_burst` | all inputs, only with `realtime` | Seconds of input read at full speed before pacing starts, so Plex gets a startup buffer (ffmpeg default `0.5`). Must be `>= 0`; fractions allowed |
+| `realtime_initial_burst` | `realtimeInitialBurst` | `-readrate_initial_burst` | all inputs, only when `realtime` is on (a channel with `"realtime": false` drops an inherited burst) | Seconds of input read at full speed before pacing starts, so Plex gets a startup buffer. Between `0` and `3600`; fractions allowed. ffmpeg uses `0.5` when `realtime` is on and this is unset |
 | `hls_live_start_index` | `hlsLiveStartIndex` | `-live_start_index` | `.m3u8` only | Segment to start live streams at; must be `<= 0` (negative counts back from the live edge; ffmpeg default `-3`) |
 | `hls_seg_max_retry` | `hlsSegMaxRetry` | `-seg_max_retry` | `.m3u8` only | Retries for a failed segment download (ffmpeg default `0` skips the segment) |
 | `hls_max_reload` | `hlsMaxReload` | `-max_reload` | `.m3u8` only | Consecutive playlist reloads with no new segment (including failed reloads) before the stream ends. Default is version dependent: `3` in ffmpeg 6.1 (the Docker image), `100` in later releases |
 
-Precedence per option: channel value → `config.json` value → unset. `realtime_initial_burst` must be `>= 0` and is ignored unless `realtime` resolves to `true` for the channel. `hls_live_start_index` must be `<= 0`, and retry counts between `0` and `2147483647` (ffmpeg stores all three as 32-bit ints); invalid values fail startup, or keep the previous channels on a hot reload.
+Precedence per option: channel value → `config.json` value → unset. `realtime_initial_burst` must be between `0` and `3600` and is ignored unless `realtime` resolves to `true` for the channel, so a channel with `"realtime": false` also drops a burst inherited from `config.json`. `hls_live_start_index` must be `<= 0`, and retry counts between `0` and `2147483647` (ffmpeg stores all three as 32-bit ints); invalid values fail startup, or keep the previous channels on a hot reload.
 
 **Known limitation: HLS detection is by URL extension.** HLS-only options are applied only when the URL path ends in `.m3u8` (case-insensitive; query strings are ignored), because ffmpeg refuses to start when given them on other inputs. Sources that serve HLS from an extensionless URL (for example `http://host/live/user/pass/123`), or that redirect to an `.m3u8`, do not get the HLS-only options; `realtime` still applies. A log line is written when a channel's own `input` sets HLS-only options that are skipped.
 
@@ -100,7 +100,16 @@ Precedence per option: channel value → `config.json` value → unset. `realtim
 }
 ```
 
-With plain `realtime`, output starts at exactly 1×, so Plex fills its startup buffer slowly and the first slow segment can stall playback right after tune-in. `realtime_initial_burst` sends that many seconds at full speed first; ffmpeg then stays that far ahead of real time. Keep it well below the live start offset (about 3 × segment length with the default index of `-3`, so ~30 s for 10 s segments). Otherwise ffmpeg reaches the live edge and the burst-then-gap pattern returns. `10` leaves ~20 s of cushion on such sources.
+With plain `realtime`, output starts at exactly 1×, so Plex fills its startup buffer slowly and the first slow segment can stall playback right after tune-in. `realtime_initial_burst` sends that many seconds at full speed first; ffmpeg then stays that far ahead of real time, and after a slow download it reads at full speed until it is back on schedule.
+
+**Choosing a burst.** ffmpeg starts roughly `|live start index| × segment length` behind the live edge (the *start offset*; ~30 s for 10 s segments with the default index of `-3`). Whatever the burst does not use is the cushion that absorbs late segments:
+
+- **Cushion ≈ start offset − burst.** Keep the burst below the start offset minus one segment length. A larger burst lets ffmpeg reach the live edge, where it can only read as fast as segments are published; on long-segment sources that brings back the burst-then-gap pattern.
+- **Too small a burst** can still give a short pause a second or two after tune-in, because Plex starts clients several seconds behind the newest data it has received. Raise the burst if you see this.
+- **If the burst you need is more than the start offset minus one segment,** deepen the start index (for example `hls_live_start_index: -5`) to make room. This adds delay behind live, and only works if the provider's playlist holds at least that many segments; otherwise ffmpeg starts at the oldest segment and the log shows `expired from playlists` soon after tune-in.
+- **Short segments** (a few seconds) give a small start offset, so a burst sized for long segments simply lets ffmpeg read up to the live edge. That is harmless there, because short segments only produce short gaps.
+
+Values depend on the provider's segment length and playlist size; `10` with the default index (~20 s of cushion on 10 s segments) is a reasonable starting point.
 
 The trade-off is extra delay behind live (roughly `-live_start_index` × segment length). If buffering persists, raise the cushion for that channel with `"input": { "hlsLiveStartIndex": -5 }`. `hls_max_reload: 100` matches the newer ffmpeg default and raises 6.1's limit of `3`, which can end a stream after roughly 15 s without a new segment.
 
