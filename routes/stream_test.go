@@ -689,3 +689,229 @@ func TestBuildFFmpegArgsMobile(t *testing.T) {
 		t.Error("default transcode should not include -s 1280x720")
 	}
 }
+
+// argValue returns the value following flag in args, or "" if absent.
+func argValue(args []string, flag string) string {
+	for i, a := range args {
+		if a == flag && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
+var inputFlags = []string{"-re", "-readrate_initial_burst", "-live_start_index", "-seg_max_retry", "-max_reload"}
+
+// TestBuildFFmpegArgsInputOptionsDefaultOff verifies that with no input
+// options configured the command contains none of the new flags.
+func TestBuildFFmpegArgsInputOptionsDefaultOff(t *testing.T) {
+	channel := config.Channel{Name: "test", URL: "https://example.com/live.m3u8"}
+	args := buildFFmpegArgs(channel, "")
+	for _, flag := range inputFlags {
+		if contains(args, flag) {
+			t.Errorf("flag %q must not be present by default", flag)
+		}
+	}
+}
+
+// TestBuildFFmpegArgsInputOptionsGlobal verifies config.json input options
+// are emitted before -i for HLS sources.
+func TestBuildFFmpegArgsInputOptionsGlobal(t *testing.T) {
+	realtime, burst, start, retry, reload := true, 10.0, -3, 3, 100
+	config.Cfg.Input = &config.InputConfig{
+		Realtime:             &realtime,
+		RealtimeInitialBurst: &burst,
+		HLSLiveStartIndex:    &start,
+		HLSSegMaxRetry:       &retry,
+		HLSMaxReload:         &reload,
+	}
+	t.Cleanup(func() { config.Cfg.Input = nil })
+
+	channel := config.Channel{Name: "test", URL: "https://example.com/live.m3u8"}
+	args := buildFFmpegArgs(channel, "")
+	iIdx := findInputIdx(args)
+	if iIdx == -1 {
+		t.Fatal("-i flag not found in args")
+	}
+	preInput := args[:iIdx]
+
+	for _, flag := range inputFlags {
+		if !contains(preInput, flag) {
+			t.Errorf("expected %q before -i", flag)
+		}
+	}
+	if v := argValue(preInput, "-readrate_initial_burst"); v != "10" {
+		t.Errorf("-readrate_initial_burst = %q, want 10", v)
+	}
+	if v := argValue(preInput, "-live_start_index"); v != "-3" {
+		t.Errorf("-live_start_index = %q, want -3", v)
+	}
+	if v := argValue(preInput, "-seg_max_retry"); v != "3" {
+		t.Errorf("-seg_max_retry = %q, want 3", v)
+	}
+	if v := argValue(preInput, "-max_reload"); v != "100" {
+		t.Errorf("-max_reload = %q, want 100", v)
+	}
+}
+
+// TestBuildFFmpegArgsInputOptionsChannelOverride verifies a channel value
+// overrides the global value and a channel can disable global realtime.
+func TestBuildFFmpegArgsInputOptionsChannelOverride(t *testing.T) {
+	realtime, start := true, -3
+	config.Cfg.Input = &config.InputConfig{Realtime: &realtime, HLSLiveStartIndex: &start}
+	t.Cleanup(func() { config.Cfg.Input = nil })
+
+	off, chStart := false, -5
+	channel := config.Channel{
+		Name:  "test",
+		URL:   "https://example.com/live.m3u8",
+		Input: &config.InputOptions{Realtime: &off, HLSLiveStartIndex: &chStart},
+	}
+	args := buildFFmpegArgs(channel, "")
+
+	if contains(args, "-re") {
+		t.Error("channel realtime=false should override global realtime=true")
+	}
+	if v := argValue(args, "-live_start_index"); v != "-5" {
+		t.Errorf("-live_start_index = %q, want channel value -5", v)
+	}
+}
+
+// TestBuildFFmpegArgsInputOptionsNonHLS verifies HLS demuxer options are
+// omitted for non-HLS sources (ffmpeg would refuse to start), while -re still
+// applies.
+func TestBuildFFmpegArgsInputOptionsNonHLS(t *testing.T) {
+	realtime, start, retry, reload := true, -5, 3, 100
+	config.Cfg.Input = &config.InputConfig{
+		Realtime:          &realtime,
+		HLSLiveStartIndex: &start,
+		HLSSegMaxRetry:    &retry,
+		HLSMaxReload:      &reload,
+	}
+	t.Cleanup(func() { config.Cfg.Input = nil })
+
+	for _, url := range []string{"http://example.com/stream.ts", "rtsp://example.com/stream"} {
+		channel := config.Channel{Name: "test", URL: url}
+		args := buildFFmpegArgs(channel, "")
+		for _, flag := range []string{"-live_start_index", "-seg_max_retry", "-max_reload"} {
+			if contains(args, flag) {
+				t.Errorf("%s: HLS-only flag %q must be omitted for non-HLS input", url, flag)
+			}
+		}
+		iIdx := findInputIdx(args)
+		if iIdx == -1 || !contains(args[:iIdx], "-re") {
+			t.Errorf("%s: -re should still be present before -i", url)
+		}
+	}
+}
+
+// TestBuildFFmpegArgsInitialBurst verifies the burst is only emitted
+// alongside -re (ffmpeg ignores it otherwise), follows channel > global
+// precedence, is formatted without trailing zeros, and that an explicit 0 is
+// emitted rather than treated as unset.
+func TestBuildFFmpegArgsInitialBurst(t *testing.T) {
+	on, off := true, false
+	globalBurst, chBurst, zero := 10.0, 2.5, 0.0
+
+	tests := []struct {
+		name      string
+		global    *config.InputConfig
+		channel   *config.InputOptions
+		wantRe    bool
+		wantBurst string // "" means -readrate_initial_burst must be absent
+	}{
+		{
+			name:   "global burst without realtime is dropped",
+			global: &config.InputConfig{RealtimeInitialBurst: &globalBurst},
+		},
+		{
+			name:      "global realtime and burst",
+			global:    &config.InputConfig{Realtime: &on, RealtimeInitialBurst: &globalBurst},
+			wantRe:    true,
+			wantBurst: "10",
+		},
+		{
+			name:      "channel burst overrides global, fractional formatting",
+			global:    &config.InputConfig{RealtimeInitialBurst: &globalBurst},
+			channel:   &config.InputOptions{Realtime: &on, RealtimeInitialBurst: &chBurst},
+			wantRe:    true,
+			wantBurst: "2.5",
+		},
+		{
+			name:    "channel realtime=false drops inherited burst",
+			global:  &config.InputConfig{Realtime: &on, RealtimeInitialBurst: &globalBurst},
+			channel: &config.InputOptions{Realtime: &off},
+		},
+		{
+			name:      "explicit zero burst is emitted",
+			global:    &config.InputConfig{Realtime: &on},
+			channel:   &config.InputOptions{RealtimeInitialBurst: &zero},
+			wantRe:    true,
+			wantBurst: "0",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config.Cfg.Input = tt.global
+			t.Cleanup(func() { config.Cfg.Input = nil })
+
+			channel := config.Channel{Name: "test", URL: "https://example.com/live.m3u8", Input: tt.channel}
+			args := buildFFmpegArgs(channel, "")
+
+			if got := contains(args, "-re"); got != tt.wantRe {
+				t.Errorf("-re present = %v, want %v (args %v)", got, tt.wantRe, args)
+			}
+			if tt.wantBurst == "" {
+				if contains(args, "-readrate_initial_burst") {
+					t.Errorf("-readrate_initial_burst must be absent, got %v", args)
+				}
+			} else if v := argValue(args, "-readrate_initial_burst"); v != tt.wantBurst {
+				t.Errorf("-readrate_initial_burst = %q, want %q", v, tt.wantBurst)
+			}
+		})
+	}
+}
+
+// TestBuildFFmpegArgsInputOptionsOrder verifies the new input options sit
+// after the -reconnect flags and immediately before -i, with -re and its
+// burst last.
+func TestBuildFFmpegArgsInputOptionsOrder(t *testing.T) {
+	realtime, burst, start, retry, reload := true, 10.0, -3, 3, 100
+	config.Cfg.Input = &config.InputConfig{
+		Realtime:             &realtime,
+		RealtimeInitialBurst: &burst,
+		HLSLiveStartIndex:    &start,
+		HLSSegMaxRetry:       &retry,
+		HLSMaxReload:         &reload,
+	}
+	t.Cleanup(func() { config.Cfg.Input = nil })
+
+	channel := config.Channel{Name: "test", URL: "https://example.com/live.m3u8"}
+	args := buildFFmpegArgs(channel, "")
+
+	want := []string{
+		"-reconnect", "1", "-reconnect_delay_max", "5",
+		"-live_start_index", "-3",
+		"-seg_max_retry", "3",
+		"-max_reload", "100",
+		"-re",
+		"-readrate_initial_burst", "10",
+		"-i", channel.URL,
+	}
+	start0 := -1
+	for i, a := range args {
+		if a == "-reconnect" {
+			start0 = i
+			break
+		}
+	}
+	if start0 == -1 || start0+len(want) > len(args) {
+		t.Fatalf("unexpected args: %v", args)
+	}
+	got := args[start0 : start0+len(want)]
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("arg order mismatch at %d:\n got  %v\n want %v", i, got, want)
+		}
+	}
+}
